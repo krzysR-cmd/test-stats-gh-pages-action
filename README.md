@@ -1,5 +1,7 @@
 # Test statistics for GitHub Pages
 
+[![Test stats](https://img.shields.io/badge/test%20stats-30%20days-blue)](https://raczeja.github.io/test-stats-gh-pages-action/stats/)
+
 Composite GitHub Action for parsing test-result files, writing a GitHub Actions
 step summary, and updating a rolling test-statistics site in a caller-provided
 directory. It does not deploy Pages; the caller can combine its output with
