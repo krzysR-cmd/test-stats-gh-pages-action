@@ -180,7 +180,8 @@ class DetailedStatsTests(unittest.TestCase):
             self.assertIn("else if(v==='retried')", dashboard)
             self.assertIn("shell failure", run["shell_failed_tests"][0]["error"])
             self.assertIn("JSON test results", dashboard)
-            self.assertIn("JUnit-format test results", dashboard)
+            self.assertIn("Additional test results", dashboard)
+            self.assertNotIn("JUnit-format test results", dashboard)
             self.assertNotIn("Failed shell tests", dashboard)
 
     def test_records_shell_failure_when_playwright_results_are_unavailable(self):
@@ -366,6 +367,42 @@ class DetailedStatsTests(unittest.TestCase):
             self.assertEqual(len(trends["top"]), 5)
             self.assertEqual(len(trends["flaky"]), 5)
             self.assertEqual(len(trends["retried"]), 5)
+
+    def test_longest_tests_trend_includes_timed_junit_results(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            results = root / "results"
+            results.mkdir()
+            shell_xml = root / "shell.xml"
+            shell_xml.write_text(
+                '<testsuite name="timing">'
+                + "".join(
+                    f'<testcase classname="timing" name="test-{index}" time="{index}"/>'
+                    for index in range(1, 7)
+                )
+                + '</testsuite>'
+            )
+            site = root / "site"
+            env = os.environ.copy()
+            env.update({
+                "RESULTS_DIR": str(results),
+                "SITE_DIR": str(site),
+                "SHELL_TESTS_XML": str(shell_xml),
+                "GITHUB_RUN_NUMBER": "1",
+                "GITHUB_RUN_ID": "run-1",
+                "GITHUB_SERVER_URL": "https://github.com",
+                "GITHUB_REPOSITORY": "owner/repo",
+            })
+            subprocess.run(["bash", str(SCRIPT)], check=True, env=env, capture_output=True, text=True)
+            dashboard = (site / "stats" / "index.html").read_text()
+            payload_start = dashboard.index("var AGG=") + len("var AGG=")
+            payload_end = dashboard.index(";</script>", payload_start)
+            trends = json.loads(dashboard[payload_start:payload_end])
+
+            self.assertEqual(
+                trends["slow"],
+                [[f"timing > test-{index}", index * 1000] for index in range(6, 1, -1)],
+            )
 
 
 if __name__ == "__main__":

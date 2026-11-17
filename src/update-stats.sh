@@ -63,9 +63,8 @@ def walk_suites(suite, parents, failed_tests, flaky_tests, slow_tests, all_tests
                     "skipped": "skipped",
                 }.get(status, status or "unknown"),
             })
-            best_dur = max((r.get("duration", 0) for r in test_results), default=0)
-            if best_dur > 0:
-                slow_tests.append({"title": full_title, "duration_ms": best_dur})
+            if duration_ms > 0:
+                slow_tests.append({"title": full_title, "duration_ms": duration_ms})
             if status == "unexpected":
                 errors = []
                 for result in test.get("results", []):
@@ -152,6 +151,8 @@ if shell_tests_xml and os.path.exists(shell_tests_xml):
                     "duration_ms": duration_ms,
                     "status": shell_status,
                 })
+                if duration_ms > 0:
+                    slow_tests.append({"title": shell_title, "duration_ms": duration_ms})
         print(f"[stats] JUnit tests: passed={shell_passed} failed={shell_failed} skipped={shell_skipped}")
         if shell_failed_tests:
             print(f"[stats] JUnit test failures ({len(shell_failed_tests)}):")
@@ -451,7 +452,7 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
                 f"{_status} Run #{_run['run_id']} — {_ts}Z"
                 f" — {_run.get('passed', 0)}p / {_run.get('failed', 0)}f"
                 f" / {_run.get('flaky_count', 0)} flaky"
-                f" / JUnit {_run.get('shell_passed', 0)}p {_run.get('shell_failed', 0)}f"
+                f" / Additional {_run.get('shell_passed', 0)}p {_run.get('shell_failed', 0)}f"
             )
             _selected = " selected" if _orig_idx == len(runs) - 1 else ""
             fh.write(f'<option value="{_orig_idx}"{_selected}>{esc(_label)}</option>\n')
@@ -516,7 +517,7 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
         change='<span class="change-badge change-updated">'+esc(test.previous_status||'unknown')+' &rarr; '+esc(status)+'</span>';
       }
       html+='<tr data-test-title="'+esc(title)+'"><td title="'+esc(title)+'">'+esc(clip(shortName(title),90))+'</td>'
-        +'<td>'+esc(test.source||'')+'</td><td><span class="status-badge '+statusClass+'">'+esc(status)+'</span></td>'
+        +'<td>'+esc(test.source==='JUnit'?'Additional':test.source||'')+'</td><td><span class="status-badge '+statusClass+'">'+esc(status)+'</span></td>'
         +'<td>'+fmtTestDur(test.duration_ms)+'</td><td>'+change+'</td></tr>';
     }
     html+='</tbody></table>';
@@ -548,10 +549,10 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
         html+='<tr><td title="'+esc(t.title)+'">'+esc(s)+'</td><td style="font-family:monospace;font-size:.7rem;color:#6b7280;text-align:left;max-width:22rem;white-space:pre-wrap">'+esc(e)+'</td></tr>';}
       html+='</table>';
     }
-    // Failed tests from JUnit results
+    // Failed tests from supplemental results
     var sf=run.shell_failed_tests||[];
     if(run.shell_failed>0||sf.length){
-      html+='<div class="section-lbl">Failed tests from JUnit results ('+sf.length+')</div>';
+      html+='<div class="section-lbl">Failed additional tests ('+sf.length+')</div>';
       if(!sf.length){
         html+='<p class="comparison-note">'+run.shell_failed+' failure(s); individual test details were not saved for this run.</p>';
       }
@@ -630,7 +631,7 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
             label = (
                 f"Run #{run['run_id']}{dur_label} — "
                 f"JSON: {run.get('passed', 0)} passed / {pw_failed} failed / {pw_flaky} flaky / {run.get('skipped', 0)} skipped — "
-                f"JUnit: {run.get('shell_passed', 0)} passed / {sh_failed} failed"
+                f"Additional: {run.get('shell_passed', 0)} passed / {sh_failed} failed"
             )
             fh.write(
                 f'<a href="{esc(run["run_url"])}" target="_blank" title="{esc(label)}">'
@@ -712,7 +713,7 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
 ''')
 
         # JUnit results section
-        fh.write('<div class="section-lbl">JUnit-format test results</div>\n')
+        fh.write('<div class="section-lbl">Additional test results</div>\n')
         fh.write('<div class="stats-row" style="margin-bottom:.5rem">\n')
         fh.write(f'<div class="stat-box"><div class="stat-val">{shell_avg_total}</div><div class="stat-lbl">Avg tests/run</div></div>\n')
         fh.write(f'<div class="stat-box"><div class="stat-val">{shell_avg_passed}</div><div class="stat-lbl">Avg passed/run</div></div>\n')
@@ -720,14 +721,14 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
         fh.write(f'<div class="stat-box stat-flaky"><div class="stat-val">{shell_total_skipped}</div><div class="stat-lbl">Total skipped</div></div>\n')
         fh.write('</div>\n')
         if top_shell:
-            fh.write('<table><tr><th>JUnit test</th><th style="width:4rem">Fails</th></tr>\n')
+            fh.write('<table><tr><th>Test</th><th style="width:4rem">Fails</th></tr>\n')
             for title, count in top_shell:
                 s = short_name(title)
                 short = s[-70:] if len(s) > 70 else s
                 fh.write(f'<tr><td title="{esc(title)}">{esc(short)}</td><td>{count}</td></tr>\n')
             fh.write('</table>\n')
         else:
-            fh.write('<p style="font-size:.8rem;color:#94a3b8;margin:.25rem 0">No JUnit test failures recorded.</p>\n')
+            fh.write('<p style="font-size:.8rem;color:#94a3b8;margin:.25rem 0">No additional test failures recorded.</p>\n')
 
         fh.write('</div>\n')
 
