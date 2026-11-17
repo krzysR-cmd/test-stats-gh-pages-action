@@ -139,7 +139,8 @@ pushes to `main` and manual runs from `main`. Pull requests build the dashboard
 but do not publish it. The first successful workflow run on `main` creates
 `gh-pages`; you do not need to create it manually. Then enable Pages in
 **Settings → Pages** with `gh-pages` and the root (`/`) folder; the dashboard
-is available at `/stats/`. The workflow restores the existing Pages files
+is available at the site root and `/stats/`. The root page redirects to the
+dashboard. The workflow restores the existing Pages files
 before each build so rolling test history is preserved, even though the
 branch's Git commit history is not.
 
