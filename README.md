@@ -155,7 +155,8 @@ source branch (for example, `main`) is unaffected.
 The `.github/workflows/test-statistics-pages.yml` workflow runs the test suite
 and publishes its JUnit XML results to this repository's `gh-pages` branch on
 pushes to `main` and manual runs from `main`. Pull requests build the dashboard
-but do not publish it. The first successful workflow run on `main` creates
+but do not publish it. Its build job summary links to the published dashboard.
+The first successful workflow run on `main` creates
 `gh-pages`; you do not need to create it manually. Then enable Pages in
 **Settings → Pages** with `gh-pages` and the root (`/`) folder; the dashboard
 is available at the site root and `/stats/`. The root page redirects to the
