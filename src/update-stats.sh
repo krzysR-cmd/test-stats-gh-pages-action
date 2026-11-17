@@ -401,6 +401,7 @@ body{{font-family:system-ui,-apple-system,Arial,sans-serif;margin:0;background:#
 .bar{{width:7px;border-radius:2px 2px 0 0}}
 .bar:hover{{opacity:.7}}
 .section-lbl{{font-size:.7rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin:.75rem 0 .35rem}}
+.table-scroll{{max-width:100%;overflow-x:auto}}
 table{{width:100%;border-collapse:collapse;font-size:.8rem}}
 th{{text-align:left;padding:.3rem .4rem;color:#94a3b8;font-weight:600;border-bottom:2px solid #e2e8f0;font-size:.72rem;text-transform:uppercase;letter-spacing:.05em}}
 td{{padding:.3rem .4rem;border-bottom:1px solid #f8fafc;word-break:break-word;color:#374151}}
@@ -432,7 +433,6 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
   .card{{padding:.875rem}}
   .card-header{{align-items:flex-start;flex-wrap:wrap;gap:.5rem}}
   .stats-row,.selected-run-stats,.duration-stats{{grid-template-columns:repeat(2,minmax(0,1fr))}}
-  table{{display:block;overflow-x:auto}}
   .test-pagination{{justify-content:flex-start}}
 }}
 </style>
@@ -559,7 +559,7 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
       +'<button type="button" id="test-page-next" aria-label="Next test page">Next</button>'
       +'<label for="test-page-size">Tests per page</label><select id="test-page-size" aria-label="Tests per page">'
       +'<option value="30" selected>30</option><option value="50">50</option><option value="100">100</option></select></div>'
-      +'<table class="all-tests"><thead><tr><th>Test</th><th>Source</th><th>Status</th><th>Execution time</th><th>Change</th></tr></thead><tbody id="all-tests-body"></tbody></table>';
+      +'<div class="table-scroll"><table class="all-tests"><thead><tr><th>Test</th><th>Source</th><th>Status</th><th>Execution time</th><th>Change</th></tr></thead><tbody id="all-tests-body"></tbody></table></div>';
     testsBox.innerHTML=html;
     document.getElementById('test-page-prev').addEventListener('click',function(){currentPage--;renderTestPage();});
     document.getElementById('test-page-next').addEventListener('click',function(){currentPage++;renderTestPage();});
@@ -589,10 +589,10 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
         html+='<p style="font-size:.8rem;color:#15803d;margin:.2rem 0">No failures ✓</p>';
       }
     }else{
-      html+='<table><tr><th>Test</th><th>Error (truncated)</th></tr>';
+      html+='<div class="table-scroll"><table><tr><th>Test</th><th>Error (truncated)</th></tr>';
       for(var i=0;i<failed.length;i++){var t=failed[i],s=clip(shortName(t.title),65),e=(t.error||'').slice(0,140);
         html+='<tr><td title="'+esc(t.title)+'">'+esc(s)+'</td><td style="font-family:monospace;font-size:.7rem;color:#6b7280;text-align:left;max-width:22rem;white-space:pre-wrap">'+esc(e)+'</td></tr>';}
-      html+='</table>';
+      html+='</table></div>';
     }
     // Failed tests from supplemental results
     var sf=run.shell_failed_tests||[];
@@ -601,10 +601,10 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
       if(!sf.length){
         html+='<p class="comparison-note">'+run.shell_failed+' failure(s); individual test details were not saved for this run.</p>';
       }
-      else{html+='<table><tr><th>Test</th><th>Error</th></tr>';
+      else{html+='<div class="table-scroll"><table><tr><th>Test</th><th>Error</th></tr>';
         for(var i=0;i<sf.length;i++){var t=sf[i],s=clip(shortName(t.title),65),e=(t.error||'').slice(0,140);
           html+='<tr><td title="'+esc(t.title)+'">'+esc(s)+'</td><td style="font-family:monospace;font-size:.7rem;color:#6b7280;text-align:left;max-width:22rem;white-space:pre-wrap">'+esc(e)+'</td></tr>';}
-        html+='</table>';}
+        html+='</table></div>';}
     }
     // Flaky tests
     var flaky=run.flaky_tests||[];
@@ -620,10 +620,10 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
     var slow=run.slowest_tests||[];
     if(slow.length){
       html+='<div class="section-lbl">Slowest tests (this run)</div>';
-      html+='<table><tr><th>Test</th><th style="width:5rem;color:#6b7280">Time</th></tr>';
+      html+='<div class="table-scroll"><table><tr><th>Test</th><th style="width:5rem;color:#6b7280">Time</th></tr>';
       for(var i=0;i<slow.length;i++){var t=slow[i],s=clip(shortName(t.title),60);
         html+='<tr><td title="'+esc(t.title)+'">'+esc(s)+'</td><td style="color:#6b7280">'+fmtDur(t.duration_ms)+'</td></tr>';}
-      html+='</table>';
+      html+='</table></div>';
     }
     detail.innerHTML=html;
   }
@@ -722,10 +722,10 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
     if(v==='top'){
       d=AGG.top;
       if(!d.length){html='<p style="font-size:.8rem;color:#94a3b8;margin:.25rem 0">No failures recorded.</p>';}
-      else{html='<table><tr><th>Test</th><th style="width:4rem">Fails</th></tr>';
+      else{html='<div class="table-scroll"><table><tr><th>Test</th><th style="width:4rem">Fails</th></tr>';
         for(var i=0;i<d.length;i++){var t=d[i],s=clip(shortName(t[0]),70);
           html+='<tr><td title="'+esc(t[0])+'">'+esc(s)+'</td><td>'+t[1]+'</td></tr>';}
-        html+='</table>';}
+        html+='</table></div>';}
     }else if(v==='flaky'){
       d=AGG.flaky;
       if(!d.length){html='<p style="font-size:.8rem;color:#15803d;margin:.25rem 0">No flaky tests ✓</p>';}
@@ -736,17 +736,17 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
     }else if(v==='longest'){
       d=AGG.slow;
       if(!d.length){html='<p style="font-size:.8rem;color:#94a3b8;margin:.25rem 0">No duration data.</p>';}
-      else{html='<table><tr><th>Test</th><th style="width:5rem;color:#6b7280">Max time</th></tr>';
+      else{html='<div class="table-scroll"><table><tr><th>Test</th><th style="width:5rem;color:#6b7280">Max time</th></tr>';
         for(var i=0;i<d.length;i++){var t=d[i],s=clip(shortName(t[0]),65);
           html+='<tr><td title="'+esc(t[0])+'">'+esc(s)+'</td><td style="color:#6b7280">'+fmtDur(t[1])+'</td></tr>';}
-        html+='</table>';}
+        html+='</table></div>';}
     }else if(v==='retried'){
       d=AGG.retried;
       if(!d.length){html='<p style="font-size:.8rem;color:#15803d;margin:.25rem 0">No retries recorded ✓</p>';}
-      else{html='<table><tr><th>Test</th><th style="width:5.5rem">Max retries</th></tr>';
+      else{html='<div class="table-scroll"><table><tr><th>Test</th><th style="width:5.5rem">Max retries</th></tr>';
         for(var i=0;i<d.length;i++){var t=d[i],s=clip(shortName(t[0]),65);
           html+='<tr><td title="'+esc(t[0])+'">'+esc(s)+'</td><td style="color:#d97706">'+t[1]+'</td></tr>';}
-        html+='</table>';}
+        html+='</table></div>';}
     }
     box.innerHTML=html;
     highlightTests(v);
@@ -766,12 +766,12 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
         fh.write(f'<div class="stat-box stat-flaky"><div class="stat-val">{shell_total_skipped}</div><div class="stat-lbl">Total skipped</div></div>\n')
         fh.write('</div>\n')
         if top_shell:
-            fh.write('<table><tr><th>Test</th><th style="width:4rem">Fails</th></tr>\n')
+            fh.write('<div class="table-scroll"><table><tr><th>Test</th><th style="width:4rem">Fails</th></tr>\n')
             for title, count in top_shell:
                 s = short_name(title)
                 short = s[-70:] if len(s) > 70 else s
                 fh.write(f'<tr><td title="{esc(title)}">{esc(short)}</td><td>{count}</td></tr>\n')
-            fh.write('</table>\n')
+            fh.write('</table></div>\n')
         else:
             fh.write('<p style="font-size:.8rem;color:#94a3b8;margin:.25rem 0">No additional test failures recorded.</p>\n')
 

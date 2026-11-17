@@ -73,7 +73,11 @@ class DetailedStatsTests(unittest.TestCase):
 
             self.assertIn("@media(max-width:640px)", dashboard)
             self.assertIn(".stats-row,.selected-run-stats,.duration-stats", dashboard)
-            self.assertIn("table{display:block;overflow-x:auto}", dashboard)
+            self.assertIn(".table-scroll{max-width:100%;overflow-x:auto}", dashboard)
+            self.assertIn(
+                '<div class="table-scroll"><table class="all-tests">',
+                dashboard,
+            )
             self.assertEqual(len(latest["tests"]), 4)
             self.assertNotIn("change", tests[("Playwright", "suite > stable")])
             self.assertEqual(tests[("Playwright", "suite > added")]["change"], "new")

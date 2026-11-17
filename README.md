@@ -150,6 +150,31 @@ With `force_orphan: true`, each deployment replaces the `gh-pages` branch with
 a new root commit. **The branch's previous commit history is not kept.** The
 source branch (for example, `main`) is unaffected.
 
+## Enable GitHub Pages and deploy from `gh-pages`
+
+The workflow above can create the `gh-pages` branch on its first successful
+deployment. If you prefer to create it yourself first, initialize an empty
+branch. For example, from a temporary directory (replace `OWNER/REPO` with
+your repository):
+
+```sh
+mkdir gh-pages-init
+cd gh-pages-init
+git init -b gh-pages
+touch .nojekyll
+git add .nojekyll
+git -c user.name="GitHub Actions" \
+    -c user.email="github-actions[bot]@users.noreply.github.com" \
+    commit -m "Initialize Pages branch"
+git remote add origin https://github.com/OWNER/REPO.git
+git push -u origin gh-pages
+```
+
+Authenticate with your normal GitHub Git credentials (for example, GitHub
+CLI); do not put a token in the repository. In your repository, open
+**Settings → Pages**. Under **Build and deployment**, choose **Deploy from a
+branch**, then select `gh-pages` and `/(root)`.
+
 ## This repository's dashboard
 
 The `.github/workflows/test-statistics-pages.yml` workflow runs the test suite
