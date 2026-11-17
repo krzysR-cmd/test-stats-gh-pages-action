@@ -130,6 +130,49 @@ class DetailedStatsTests(unittest.TestCase):
             self.assertIn("Test trends (last 30 days)", dashboard)
             self.assertIn("shell failure", run["shell_failed_tests"][0]["error"])
 
+    def test_records_shell_failure_when_playwright_results_are_unavailable(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            results = root / "results"
+            results.mkdir()
+            shell_xml = root / "shell.xml"
+            shell_xml.write_text(
+                '<testsuites><testsuite name="shell-tests" tests="2" failures="1">'
+                '<testcase classname="other-test" name="passes"/>'
+                '<testcase classname="scrape-csrf-extraction" '
+                'name="scrape-csrf-extraction / current-csrf-meta-name">'
+                '<failure message=\'expected "current123XYZ", got ""\'/>'
+                '</testcase></testsuite></testsuites>'
+            )
+            site = root / "site"
+            env = os.environ.copy()
+            env.update({
+                "RESULTS_DIR": str(results),
+                "SITE_DIR": str(site),
+                "SHELL_TESTS_XML": str(shell_xml),
+                "GITHUB_RUN_NUMBER": "371",
+                "GITHUB_RUN_ID": "run-371",
+                "GITHUB_SERVER_URL": "https://github.com",
+                "GITHUB_REPOSITORY": "owner/repo",
+            })
+            subprocess.run(["bash", str(SCRIPT)], check=True, env=env, capture_output=True, text=True)
+            run = json.loads((site / "stats" / "runs.json").read_text())["runs"][0]
+            dashboard = (site / "stats" / "index.html").read_text()
+
+            self.assertEqual((run["total"], run["failed"]), (0, 0))
+            self.assertEqual((run["shell_passed"], run["shell_failed"]), (1, 1))
+            self.assertEqual(len(run["shell_failed_tests"]), 1)
+            failure = run["shell_failed_tests"][0]
+            self.assertEqual(failure["title"], "shell-tests > scrape-csrf-extraction / current-csrf-meta-name")
+            self.assertEqual(failure["error"], 'expected "current123XYZ", got ""')
+            self.assertIn("current-csrf-meta-name", dashboard)
+            self.assertIn("current123XYZ", dashboard)
+            self.assertIn("shell_failed_tests", dashboard)
+            self.assertIn(
+                '["shell-tests > scrape-csrf-extraction / current-csrf-meta-name", 1]',
+                dashboard,
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

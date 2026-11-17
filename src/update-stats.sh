@@ -250,9 +250,10 @@ def top_failing(runs, n=10):
     for run in runs:
         if is_all_failed_run(run):
             continue
-        for t in run.get("failed_tests", []):
-            k = t["title"]
-            counts[k] = counts.get(k, 0) + 1
+        for key in ("failed_tests", "shell_failed_tests"):
+            for test in run.get(key, []):
+                title = test["title"]
+                counts[title] = counts.get(title, 0) + 1
     return sorted(counts.items(), key=lambda x: -x[1])[:n]
 
 def flaky_counts(runs):

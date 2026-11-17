@@ -42,7 +42,8 @@ It creates/updates:
 - `stats/runs.json` and `stats/index.html` — the detailed rolling 30-day
   Playwright and optional shell-test dashboard. It lists all tests captured by
   the detailed-statistics step, marks new tests and status changes against the
-  previous run, and highlights tests included in the selected Test trends view.
+  previous run, and includes both Playwright and JUnit failures in the Top
+  failing Test trends view.
   Detailed statistics are enabled by default and can be disabled with
   `detailed-statistics: "false"`.
 
