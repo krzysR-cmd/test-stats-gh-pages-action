@@ -39,18 +39,24 @@ inputs:
 outputs:
   total:
     description: Number of tests across all input files.
+    value: ${{ steps.stats.outputs.total }}
   passed:
     description: Number of passed tests, including Playwright flaky passes.
+    value: ${{ steps.stats.outputs.passed }}
   failed:
     description: Number of failed tests.
+    value: ${{ steps.stats.outputs.failed }}
   skipped:
     description: Number of skipped tests.
+    value: ${{ steps.stats.outputs.skipped }}
   stats-file:
     description: Path to the generated normalized run JSON.
+    value: ${{ steps.stats.outputs.stats-file }}
 runs:
   using: composite
   steps:
     - name: Generate test statistics
+      id: stats
       shell: bash
       env:
         INPUT_RESULT_FILES: ${{ inputs.result-files }}
