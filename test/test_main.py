@@ -93,6 +93,33 @@ class StatsActionTests(unittest.TestCase):
             self.assertIn("passed**", summary.read_text())
             self.assertIn("total=1", output.read_text())
 
+    def test_action_aggregates_junit_and_playwright_json(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            junit = root / "shell-tests.xml"
+            junit.write_text('<testsuite><testcase name="shell pass"/></testsuite>')
+            playwright = root / "results.json"
+            playwright.write_text(json.dumps({
+                "stats": {"expected": 2, "unexpected": 1, "flaky": 1, "skipped": 1, "duration": 900},
+                "suites": [],
+            }))
+            runs_path = root / "site" / "stats" / "runs.json"
+            env = {
+                "INPUT_RESULT_FILES": f"{junit}\n{playwright}",
+                "INPUT_FORMAT": "auto",
+                "INPUT_SITE_DIRECTORY": str(root / "site"),
+                "INPUT_HISTORY_DAYS": "30",
+                "INPUT_REPORT_NAME": "CI tests",
+                "GITHUB_RUN_NUMBER": "17",
+            }
+            with patch.dict(os.environ, env, clear=True):
+                main.main()
+            run = json.loads(runs_path.read_text())["runs"][0]
+            self.assertEqual(
+                (run["total"], run["passed"], run["failed"], run["skipped"], run["flaky_count"]),
+                (6, 4, 1, 1, 1),
+            )
+
 
 if __name__ == "__main__":
     unittest.main()
