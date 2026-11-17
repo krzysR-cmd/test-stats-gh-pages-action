@@ -47,6 +47,17 @@ class StatsActionTests(unittest.TestCase):
                 main.input_paths()
         self.assertEqual(exc.exception.code, 1)
 
+    def test_dashboard_url_must_be_an_absolute_http_url(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            summary = Path(tmp) / "summary"
+            with patch.dict(os.environ, {
+                "GITHUB_STEP_SUMMARY": str(summary),
+                "INPUT_DASHBOARD_URL": "javascript:alert(1)",
+            }, clear=True):
+                with self.assertRaises(SystemExit) as exc:
+                    main.write_summary("CI tests", {"passed": 1, "failed": 0, "skipped": 0, "total": 1})
+        self.assertEqual(exc.exception.code, 1)
+
     def test_junit_rejects_non_junit_xml(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "not-junit.xml"
@@ -78,6 +89,7 @@ class StatsActionTests(unittest.TestCase):
                 "INPUT_STATS_SUBDIRECTORY": "reusable-stats",
                 "INPUT_HISTORY_DAYS": "30",
                 "INPUT_REPORT_NAME": "CI tests",
+                "INPUT_DASHBOARD_URL": "https://owner.github.io/repo/reusable-stats/",
                 "GITHUB_RUN_NUMBER": "42",
                 "GITHUB_RUN_ID": "42",
                 "GITHUB_SERVER_URL": "https://github.com",
@@ -91,6 +103,10 @@ class StatsActionTests(unittest.TestCase):
             self.assertEqual([item["run_id"] for item in stored["runs"]], ["recent", "42"])
             self.assertTrue((runs_path.parent / "index.html").is_file())
             self.assertIn("passed**", summary.read_text())
+            self.assertIn(
+                "[View test statistics dashboard](https://owner.github.io/repo/reusable-stats/)",
+                summary.read_text(),
+            )
             self.assertIn("total=1", output.read_text())
 
     def test_action_aggregates_junit_and_playwright_json(self):

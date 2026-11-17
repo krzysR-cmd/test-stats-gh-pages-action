@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import sys
 import tempfile
+from urllib.parse import quote, urlsplit
 import xml.etree.ElementTree as ET
 
 
@@ -160,10 +161,22 @@ def write_summary(name, run):
     summary = env("GITHUB_STEP_SUMMARY")
     if not summary:
         return
+    dashboard_url = env("INPUT_DASHBOARD_URL").strip()
+    link = ""
+    if dashboard_url:
+        try:
+            parsed_url = urlsplit(dashboard_url)
+        except ValueError:
+            fail("dashboard-url must be an absolute http(s) URL")
+        if parsed_url.scheme not in ("http", "https") or not parsed_url.netloc:
+            fail("dashboard-url must be an absolute http(s) URL")
+        safe_url = quote(dashboard_url, safe=":/?#[]@!$&'*+,;=%")
+        link = f"[View test statistics dashboard]({safe_url})\n\n"
     line = (
         f"## {name}\n\n"
         f"**{run['passed']} passed**, {run['failed']} failed, "
         f"{run['skipped']} skipped ({run['total']} total)\n\n"
+        f"{link}"
     )
     with open(summary, "a", encoding="utf-8") as out:
         out.write(line)

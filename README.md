@@ -23,8 +23,14 @@ other site content and perform one deployment.
     stats-subdirectory: reusable-stats
     history-days: 30
     report-name: CI tests
+    dashboard-url: https://owner.github.io/repo/reusable-stats/
     detailed-statistics: "true"
 ```
+
+Set `dashboard-url` to the published URL for the dashboard to add a link to it
+in the GitHub Actions summary. This is optional because the Pages URL and
+published path depend on each project; when omitted, the summary shows counts
+without a dashboard link.
 
 The action is test-runner agnostic when a runner can emit JUnit XML, a common
 interchange format supported by many test frameworks. Built-in parsers support
@@ -42,8 +48,9 @@ It creates/updates:
 - `<stats-subdirectory>/runs.json` — normalized run history, pruned to the
   configured rolling window and deduplicated by GitHub run number.
 - `<stats-subdirectory>/index.html` — a small static recent-run table.
-- `$GITHUB_STEP_SUMMARY` and action outputs `total`, `passed`, `failed`,
-  `skipped`, and `stats-file`.
+- `$GITHUB_STEP_SUMMARY` with test counts and, when `dashboard-url` is set, a
+  link to the published dashboard; plus action outputs `total`, `passed`,
+  `failed`, `skipped`, and `stats-file`.
 - `stats/runs.json` and `stats/index.html` — the detailed rolling 30-day
   per-test dashboard. It lists all tests captured by
   the selected run (the newest run by default), with a selector at the top of

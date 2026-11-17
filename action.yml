@@ -24,6 +24,10 @@ inputs:
     description: Label used in the GitHub Actions summary.
     required: false
     default: Test results
+  dashboard-url:
+    description: Published URL of the test statistics dashboard to link in the GitHub Actions summary.
+    required: false
+    default: ""
   detailed-statistics:
     description: Generate the detailed rolling dashboard from supported test result files.
     required: false
@@ -65,6 +69,7 @@ runs:
         INPUT_HISTORY_DAYS: ${{ inputs.history-days }}
         INPUT_STATS_SUBDIRECTORY: ${{ inputs.stats-subdirectory }}
         INPUT_REPORT_NAME: ${{ inputs.report-name }}
+        INPUT_DASHBOARD_URL: ${{ inputs.dashboard-url }}
       run: python3 "${{ github.action_path }}/src/main.py"
     - name: Generate detailed 30-day dashboard
       if: inputs.detailed-statistics == 'true'
