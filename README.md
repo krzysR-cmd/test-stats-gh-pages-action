@@ -2,6 +2,8 @@
 
 [![Test stats](https://img.shields.io/badge/test%20stats-30%20days-blue)](https://raczeja.github.io/test-stats-gh-pages-action/stats/)
 
+[![Test statistics dashboard](screenshots/stats-dashboard.png)](https://raczeja.github.io/test-stats-gh-pages-action/stats/)
+
 Composite GitHub Action for parsing test-result files, writing a GitHub Actions
 step summary, and updating a rolling test-statistics site in a caller-provided
 directory. It does not deploy Pages; the caller can combine its output with
@@ -46,7 +48,9 @@ It creates/updates:
   per-test dashboard. It lists all tests captured by
   the selected run (the newest run by default), with a selector at the top of
   the dashboard, including each test's execution time when the result file
-  provides it. It marks new tests and status changes against the previous run,
+  provides it. The test table is paginated with 30 tests per page by default,
+  selectable sizes of 30, 50, or 100, Prev/Next controls, a displayed range,
+  and a page count. It marks new tests and status changes against the previous run,
   and includes failures from each configured result source in the Top failing
   Test trends view. Failures seen in only some runs are included in the Flaky
   tests trend.

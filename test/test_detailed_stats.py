@@ -184,6 +184,49 @@ class DetailedStatsTests(unittest.TestCase):
             self.assertNotIn("JUnit-format test results", dashboard)
             self.assertNotIn("Failed shell tests", dashboard)
 
+    def test_paginates_selected_run_tests_and_allows_page_size_selection(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            results = root / "results"
+            results.mkdir()
+            tests = [{
+                "title": f"test-{index}",
+                "file": "tests/pagination.spec.js",
+                "tests": [{"status": "expected", "results": []}],
+            } for index in range(65)]
+            (results / "playwright.json").write_text(json.dumps({
+                "stats": {"expected": len(tests), "unexpected": 0, "flaky": 0, "skipped": 0, "duration": 0},
+                "suites": [{"title": "pagination", "specs": tests}],
+            }))
+            shell_xml = root / "shell.xml"
+            shell_xml.write_text('<testsuite name="shell"/>')
+            site = root / "site"
+            env = os.environ.copy()
+            env.update({
+                "RESULTS_DIR": str(results),
+                "SITE_DIR": str(site),
+                "SHELL_TESTS_XML": str(shell_xml),
+                "GITHUB_RUN_NUMBER": "1",
+                "GITHUB_RUN_ID": "run-1",
+                "GITHUB_SERVER_URL": "https://github.com",
+                "GITHUB_REPOSITORY": "owner/repo",
+            })
+            subprocess.run(["bash", str(SCRIPT)], check=True, env=env, capture_output=True, text=True)
+            dashboard = (site / "stats" / "index.html").read_text()
+
+            self.assertIn("var testsPerPage=30;", dashboard)
+            self.assertIn("Math.ceil(currentTests.length/testsPerPage)", dashboard)
+            self.assertIn("Showing '+(currentTests.length?start+1:0)+'-'+end+' of '+currentTests.length+' tests'", dashboard)
+            self.assertIn("Page '+(currentPage+1)+' of '+pageCount", dashboard)
+            self.assertIn('aria-label="Previous test page">Prev', dashboard)
+            self.assertIn('aria-label="Next test page">Next', dashboard)
+            self.assertIn('<option value="30" selected>30</option><option value="50">50</option><option value="100">100</option>', dashboard)
+            self.assertIn("currentPage--;renderTestPage()", dashboard)
+            self.assertIn("currentPage++;renderTestPage()", dashboard)
+            self.assertIn("testsPerPage=parseInt(this.value,10)", dashboard)
+            self.assertIn("var start=currentPage*testsPerPage,end=Math.min(start+testsPerPage,currentTests.length)", dashboard)
+            self.assertIn('"title": "pagination > test-64"', dashboard)
+
     def test_records_shell_failure_when_playwright_results_are_unavailable(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

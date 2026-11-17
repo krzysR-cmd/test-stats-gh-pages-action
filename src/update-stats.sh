@@ -416,6 +416,10 @@ td:last-child{{text-align:right;font-weight:700;color:#dc2626;white-space:nowrap
 .change-new{{background:#dbeafe;color:#1d4ed8}}
 .change-updated{{background:#ffedd5;color:#c2410c}}
 #all-tests-body tr.test-trend-match td{{background:#fef3c7}}
+.test-pagination{{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:.6rem;margin:.75rem 0;font-size:.78rem;color:#64748b}}
+.test-pagination button{{border:1px solid #cbd5e1;border-radius:.375rem;background:#fff;color:#334155;padding:.3rem .6rem;cursor:pointer}}
+.test-pagination button:disabled{{color:#94a3b8;background:#f8fafc;cursor:not-allowed}}
+.test-pagination select{{border:1px solid #cbd5e1;border-radius:.375rem;background:#fff;color:#334155;padding:.3rem}}
 a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
 .empty{{text-align:center;padding:4rem;color:#94a3b8}}
 </style>
@@ -467,13 +471,43 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
   var picker=document.getElementById('run-picker');
   var testsBox=document.getElementById('selected-run-tests');
   var detail=document.getElementById('run-detail');
+  var testsPerPage=30;
+  var currentPage=0;
+  var currentTests=[];
   function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
   function fmtDur(ms){if(!ms)return '&mdash;';var s=ms/1000;if(s<60)return s.toFixed(0)+'s';return Math.floor(s/60)+'m '+Math.floor(s%60)+'s';}
   function fmtTestDur(ms){if(typeof ms!=='number'||ms<=0)return '&mdash;';if(ms<1000)return Math.round(ms)+' ms';if(ms<60000)return (ms/1000).toFixed(2)+' s';var s=ms/1000;return Math.floor(s/60)+'m '+(s%60).toFixed(1)+'s';}
   function shortName(t){var p=t.split('>').map(function(x){return x.trim();}).filter(Boolean);return p.length>=2?p.slice(-2).join(' › '):(p[p.length-1]||t);}
   function clip(s,n){return s.length>n?s.slice(-n):s;}
+  function renderTestPage(){
+    var pageCount=Math.max(1,Math.ceil(currentTests.length/testsPerPage));
+    currentPage=Math.min(Math.max(0,currentPage),pageCount-1);
+    var start=currentPage*testsPerPage,end=Math.min(start+testsPerPage,currentTests.length),rows='';
+    for(var i=start;i<end;i++){
+      var test=currentTests[i],title=test.title||'',status=test.status||'unknown';
+      var statusClass={passed:'status-passed',failed:'status-failed',flaky:'status-flaky',skipped:'status-skipped'}[status]||'';
+      var change='—';
+      if(test.change==='new'){
+        change='<span class="change-badge change-new">New</span>';
+      }else if(test.change==='changed'){
+        change='<span class="change-badge change-updated">'+esc(test.previous_status||'unknown')+' &rarr; '+esc(status)+'</span>';
+      }
+      rows+='<tr data-test-title="'+esc(title)+'"><td title="'+esc(title)+'">'+esc(clip(shortName(title),90))+'</td>'
+        +'<td>'+esc(test.source==='JUnit'?'Additional':test.source||'')+'</td><td><span class="status-badge '+statusClass+'">'+esc(status)+'</span></td>'
+        +'<td>'+fmtTestDur(test.duration_ms)+'</td><td>'+change+'</td></tr>';
+    }
+    document.getElementById('all-tests-body').innerHTML=rows;
+    document.getElementById('test-page-range').textContent='Showing '+(currentTests.length?start+1:0)+'-'+end+' of '+currentTests.length+' tests';
+    document.getElementById('test-page-count').textContent='Page '+(currentPage+1)+' of '+pageCount;
+    document.getElementById('test-page-prev').disabled=currentPage===0;
+    document.getElementById('test-page-next').disabled=currentPage>=pageCount-1;
+    var aggPicker=document.getElementById('agg-picker');
+    if(aggPicker){aggPicker.dispatchEvent(new Event('change'));}
+  }
   function renderTests(run){
     var tests=run.tests||[];
+    currentTests=tests;
+    currentPage=0;
     var counts={total:0,passed:0,failed:0,flaky:0,skipped:0};
     if(tests.length){
       counts.total=tests.length;
@@ -506,24 +540,22 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
       testsBox.innerHTML=html;
       return;
     }
-    html+='<table class="all-tests"><thead><tr><th>Test</th><th>Source</th><th>Status</th><th>Execution time</th><th>Change</th></tr></thead><tbody id="all-tests-body">';
-    for(var i=0;i<tests.length;i++){
-      var test=tests[i],title=test.title||'',status=test.status||'unknown';
-      var statusClass={passed:'status-passed',failed:'status-failed',flaky:'status-flaky',skipped:'status-skipped'}[status]||'';
-      var change='—';
-      if(test.change==='new'){
-        change='<span class="change-badge change-new">New</span>';
-      }else if(test.change==='changed'){
-        change='<span class="change-badge change-updated">'+esc(test.previous_status||'unknown')+' &rarr; '+esc(status)+'</span>';
-      }
-      html+='<tr data-test-title="'+esc(title)+'"><td title="'+esc(title)+'">'+esc(clip(shortName(title),90))+'</td>'
-        +'<td>'+esc(test.source==='JUnit'?'Additional':test.source||'')+'</td><td><span class="status-badge '+statusClass+'">'+esc(status)+'</span></td>'
-        +'<td>'+fmtTestDur(test.duration_ms)+'</td><td>'+change+'</td></tr>';
-    }
-    html+='</tbody></table>';
+    html+='<div class="test-pagination" aria-label="Test table pagination">'
+      +'<button type="button" id="test-page-prev" aria-label="Previous test page">Prev</button>'
+      +'<span id="test-page-range"></span><span id="test-page-count"></span>'
+      +'<button type="button" id="test-page-next" aria-label="Next test page">Next</button>'
+      +'<label for="test-page-size">Tests per page</label><select id="test-page-size" aria-label="Tests per page">'
+      +'<option value="30" selected>30</option><option value="50">50</option><option value="100">100</option></select></div>'
+      +'<table class="all-tests"><thead><tr><th>Test</th><th>Source</th><th>Status</th><th>Execution time</th><th>Change</th></tr></thead><tbody id="all-tests-body"></tbody></table>';
     testsBox.innerHTML=html;
-    var aggPicker=document.getElementById('agg-picker');
-    if(aggPicker){aggPicker.dispatchEvent(new Event('change'));}
+    document.getElementById('test-page-prev').addEventListener('click',function(){currentPage--;renderTestPage();});
+    document.getElementById('test-page-next').addEventListener('click',function(){currentPage++;renderTestPage();});
+    document.getElementById('test-page-size').addEventListener('change',function(){
+      testsPerPage=parseInt(this.value,10);
+      currentPage=0;
+      renderTestPage();
+    });
+    renderTestPage();
   }
   function renderRun(run){
     if(!run){testsBox.innerHTML='';detail.innerHTML='';return;}
