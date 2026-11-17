@@ -1,5 +1,5 @@
 name: Test statistics for GitHub Pages
-description: Normalize test result files, write a GitHub Actions summary, and update a rolling statistics site.
+description: Collect supported test results, write a GitHub Actions summary, and maintain rolling statistics.
 inputs:
   result-files:
     description: Newline-separated result file paths or glob patterns.
@@ -25,15 +25,15 @@ inputs:
     required: false
     default: Test results
   detailed-statistics:
-    description: Generate the detailed Playwright and shell-test 30-day dashboard.
+    description: Generate the detailed rolling dashboard from supported test result files.
     required: false
     default: "true"
   playwright-results-directory:
-    description: Directory containing Playwright JSON reports for the detailed dashboard.
+    description: Directory containing Playwright-format JSON reports for the detailed dashboard.
     required: false
     default: downloaded-results
   shell-test-results:
-    description: Optional JUnit XML file containing shell test results.
+    description: Optional JUnit XML file from any test runner for the detailed dashboard.
     required: false
     default: ""
 outputs:
@@ -41,7 +41,7 @@ outputs:
     description: Number of tests across all input files.
     value: ${{ steps.stats.outputs.total }}
   passed:
-    description: Number of passed tests, including Playwright flaky passes.
+    description: Number of passed tests, including retry successes identified by the result format.
     value: ${{ steps.stats.outputs.passed }}
   failed:
     description: Number of failed tests.

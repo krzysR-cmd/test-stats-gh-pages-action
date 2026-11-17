@@ -14,7 +14,6 @@ other site content and perform one deployment.
   with:
     result-files: |
       test-results/junit.xml
-      shell-tests.xml
     format: auto
     site-directory: site
     stats-subdirectory: reusable-stats
@@ -23,10 +22,12 @@ other site content and perform one deployment.
     detailed-statistics: "true"
 ```
 
-The action currently supports JUnit XML (`.xml`) and Playwright JSON (`.json`)
-with `stats` and `suites` objects. `format: auto` selects by extension. To add a
-format, implement a parser adapter that emits the existing normalized counts
-and preserve `stats/runs.json` as the storage contract.
+The action is test-runner agnostic when a runner can emit JUnit XML, a common
+interchange format supported by many test frameworks. Built-in parsers support
+JUnit XML and Playwright-format JSON (`.json`, with `stats` and `suites`
+objects); `format: auto` selects by extension. To add another native format,
+implement a parser adapter that emits the existing normalized counts and
+preserve `stats/runs.json` as the storage contract.
 
 The statistics action requires Python 3 on the runner. `result-files` accepts
 newline-separated paths or glob patterns. Missing matches and malformed files
@@ -40,19 +41,21 @@ It creates/updates:
 - `$GITHUB_STEP_SUMMARY` and action outputs `total`, `passed`, `failed`,
   `skipped`, and `stats-file`.
 - `stats/runs.json` and `stats/index.html` — the detailed rolling 30-day
-  Playwright and optional shell-test dashboard. It lists all tests captured by
-  the detailed-statistics step, marks new tests and status changes against the
-  previous run, and includes both Playwright and JUnit failures in the Top
-  failing Test trends view.
+  per-test dashboard. It lists all tests captured by
+  the selected run (the newest run by default), with a selector at the top of
+  the dashboard. It marks new tests and status changes against the previous
+  run, and includes failures from each configured result source in the Top
+  failing Test trends view. Failures seen in only some runs are included in the
+  Flaky tests trend.
   Detailed statistics are enabled by default and can be disabled with
   `detailed-statistics: "false"`.
 
-The `passed` count includes Playwright tests that passed after retries; these
+For Playwright-format JSON, tests that pass after retries count as passed and
 are also exposed separately as `flaky_count` in the normalized run record.
-JUnit failures and Playwright unexpected tests count as failed. The detailed
-dashboard uses Playwright JSON and the optional `shell-test-results` JUnit
-file. Other JUnit result files contribute to the normalized results and
-summary.
+JUnit XML results from any runner contribute to the normalized results and
+summary. The detailed dashboard can include Playwright-format JSON and an
+optional JUnit XML report; the `shell-test-results` input name is retained for
+compatibility, but it accepts JUnit results from any test runner.
 
 ## Permissions and deployment
 
@@ -90,13 +93,14 @@ jobs:
           path: site
 
       - name: Run tests
-        run: npm test -- --reporter=junit
+        run: ./scripts/run-tests.sh # Configure your runner to write JUnit XML.
 
       - name: Update test statistics
         uses: raczeja/test-stats-gh-pages-action@v1
         with:
           result-files: test-results/junit.xml
           site-directory: site
+          shell-test-results: test-results/junit.xml
 
       - uses: actions/upload-artifact@v4
         with:
@@ -135,7 +139,7 @@ source branch (for example, `main`) is unaffected.
 ## This repository's dashboard
 
 The `.github/workflows/test-statistics-pages.yml` workflow runs the test suite
-and publishes its JUnit results to this repository's `gh-pages` branch on
+and publishes its JUnit XML results to this repository's `gh-pages` branch on
 pushes to `main` and manual runs from `main`. Pull requests build the dashboard
 but do not publish it. The first successful workflow run on `main` creates
 `gh-pages`; you do not need to create it manually. Then enable Pages in

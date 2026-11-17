@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-# Reads Playwright JSON results from downloaded-results/ and shell test JUnit XML,
+# Reads Playwright-format JSON and optional JUnit XML test results,
 # updates site/stats/runs.json with a rolling 30-day window, and regenerates
 # site/stats/index.html with a failure/flakiness dashboard.
 #
@@ -12,7 +12,7 @@ set -euo pipefail
 #   GITHUB_SERVER_URL   - e.g. "https://github.com"
 #   GITHUB_REPOSITORY   - e.g. "org/repo"
 # Optional env vars:
-#   SHELL_TESTS_XML     - path to JUnit XML from shell unit tests
+#   SHELL_TESTS_XML     - optional path to JUnit XML test results
 
 RESULTS_DIR="${RESULTS_DIR:-downloaded-results}"
 SITE_DIR="${SITE_DIR:-site}"
@@ -108,7 +108,7 @@ for json_file in all_json_files:
     for suite in data.get("suites", []):
         walk_suites(suite, [], failed_tests, flaky_tests, slow_tests, all_tests)
 
-# ── Shell tests (JUnit XML) ─────────────────────────────────────────────────
+# ── Supplemental JUnit results ──────────────────────────────────────────────
 
 shell_passed = 0
 shell_failed = 0
@@ -147,15 +147,15 @@ if shell_tests_xml and os.path.exists(shell_tests_xml):
                     "file": tc.get("classname", ""),
                     "status": shell_status,
                 })
-        print(f"[stats] Shell tests: passed={shell_passed} failed={shell_failed} skipped={shell_skipped}")
+        print(f"[stats] JUnit tests: passed={shell_passed} failed={shell_failed} skipped={shell_skipped}")
         if shell_failed_tests:
-            print(f"[stats] Shell test failures ({len(shell_failed_tests)}):")
+            print(f"[stats] JUnit test failures ({len(shell_failed_tests)}):")
             for t in shell_failed_tests:
                 print(f"    - {t['title']}")
     except Exception as e:
-        print(f"[stats] Could not parse shell tests XML {shell_tests_xml}: {e}", file=sys.stderr)
+        print(f"[stats] Could not parse JUnit XML {shell_tests_xml}: {e}", file=sys.stderr)
 else:
-    print(f"[stats] No shell tests XML provided — skipping")
+    print(f"[stats] No supplemental JUnit XML provided — skipping")
 
 run_entry = {
     "run_id":              run_number,
@@ -270,11 +270,12 @@ def flaky_counts(runs):
     fail_counts = {}
     for run in eligible:
         seen = set()
-        for t in run.get("failed_tests", []):
-            k = t["title"]
-            if k not in seen:
-                fail_counts[k] = fail_counts.get(k, 0) + 1
-                seen.add(k)
+        for key in ("failed_tests", "shell_failed_tests"):
+            for test in run.get(key, []):
+                title = test["title"]
+                if title not in seen:
+                    fail_counts[title] = fail_counts.get(title, 0) + 1
+                    seen.add(title)
     total = len(eligible)
     for k, c in fail_counts.items():
         if 0 < c < total:
@@ -337,7 +338,7 @@ shell_avg_passed    = int(round(shell_total_passed / max(1, len(eligible))))
 shell_avg_failed    = int(round(shell_total_failed / max(1, len(eligible))))
 shell_avg_total     = int(round((shell_total_passed + shell_total_failed + shell_total_skipped) / max(1, len(eligible))))
 
-# Top shell test failures across runs
+# Top JUnit test failures across runs
 shell_fail_counts = {}
 for run in eligible:
     for t in run.get("shell_failed_tests", []):
@@ -425,7 +426,7 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
   <span class="legend-item"><span class="legend-swatch sw-yellow"></span>Flaky only</span>
   <span class="legend-item"><span class="legend-swatch sw-mixed"></span>Failures + flaky</span>
   <span class="legend-item"><span class="legend-swatch sw-black"></span>All failed (excluded from stats)</span>
-  <span class="legend-note">Bars: newest &larr; oldest. Bar height = total tests run (Playwright + shell); color = pass/fail status. Cards sorted newest execution first.</span>
+  <span class="legend-note">Bars: newest &larr; oldest. Bar height = total tests across configured result sources; color = pass/fail status. Cards sorted newest execution first.</span>
 </div>
 """)
 
@@ -433,108 +434,9 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
         fh.write('<div class="empty"><p>No statistics available yet.</p></div>\n')
     else:
         fh.write('<div class="card">\n')
-        fh.write(f'<div class="card-header"><h2 class="card-title">Last 30 days &mdash; {len(runs)} run(s)</h2>')
-        fh.write(f'<span class="rate-pill {rate_cls}">{pass_rate}% pass rate</span></div>\n')
-
-        fh.write('<div class="section-lbl">Playwright tests</div>\n')
-        fh.write('<div class="stats-row">\n')
-        fh.write(f'<div class="stat-box"><div class="stat-val">{avg_total}</div><div class="stat-lbl">Avg tests/run</div></div>\n')
-        fh.write(f'<div class="stat-box"><div class="stat-val">{avg_passed}</div><div class="stat-lbl">Avg passed/run</div></div>\n')
-        fh.write(f'<div class="stat-box stat-fail"><div class="stat-val">{total_failed}</div><div class="stat-lbl">Total failures</div></div>\n')
-        fh.write(f'<div class="stat-box stat-flaky"><div class="stat-val">{total_flaky}</div><div class="stat-lbl">Total flaky</div></div>\n')
-        fh.write('</div>\n')
-        if any(durations):
-            fh.write('<div class="section-lbl">Execution time</div>\n')
-            fh.write('<div class="stats-row" style="grid-template-columns:repeat(3,1fr)">\n')
-            fh.write(f'<div class="stat-box"><div class="stat-val">{fmt_dur(avg_dur_ms)}</div><div class="stat-lbl">Avg run time</div></div>\n')
-            fh.write(f'<div class="stat-box"><div class="stat-val">{fmt_dur(min_dur_ms)}</div><div class="stat-lbl">Fastest run</div></div>\n')
-            fh.write(f'<div class="stat-box"><div class="stat-val">{fmt_dur(max_dur_ms)}</div><div class="stat-lbl">Slowest run</div></div>\n')
-            fh.write('</div>\n')
-
-        max_total = max((r.get("total", 0) + r.get("shell_passed", 0) + r.get("shell_failed", 0) for r in runs), default=1) or 1
-        fh.write('<div class="spark-label">Tests per run (Playwright + shell) — color shows pass/fail</div>\n')
-        fh.write('<div class="sparkline" title="Total tests per run (newest → oldest)">')
-        for run in reversed(runs):
-            pw_failed   = run["failed"]
-            pw_flaky    = run.get("flaky_count", 0)
-            sh_failed   = run.get("shell_failed", 0)
-            issues      = pw_failed + pw_flaky + sh_failed
-            run_total   = run.get("total", 0) + run.get("shell_passed", 0) + sh_failed
-            h           = max(8, round(60 * run_total / max_total))
-            if is_all_failed_run(run):
-                color = "#1e293b"
-            elif issues == 0:
-                color = "#22c55e"
-            elif pw_failed > 0 and pw_flaky > 0:
-                red_pct    = round(100 * pw_failed / issues, 1)
-                yellow_pct = 100 - red_pct
-                color = f"linear-gradient(to top,#eab308 0%,#eab308 {yellow_pct}%,#ef4444 {yellow_pct}%)"
-            elif pw_failed > 0 or sh_failed > 0:
-                color = "#ef4444"
-            else:
-                color = "#eab308"
-            dur_label = f" — ⏱ {fmt_dur(run.get('duration_ms', 0))}" if run.get("duration_ms", 0) > 0 else ""
-            label = (
-                f"Run #{run['run_id']}{dur_label} — "
-                f"Playwright: {run.get('passed', 0)} passed / {pw_failed} failed / {pw_flaky} flaky / {run.get('skipped', 0)} skipped — "
-                f"Shell: {run.get('shell_passed', 0)} passed / {sh_failed} failed"
-            )
-            fh.write(
-                f'<a href="{esc(run["run_url"])}" target="_blank" title="{esc(label)}">'
-                f'<div class="bar" style="height:{h}px;background:{color}"></div></a>'
-            )
-        fh.write('</div>\n')
-
-        latest = runs[-1]
-        latest_tests = latest.get("tests", [])
-        fh.write('<div class="section-lbl">All tests in latest run</div>\n')
-        if latest.get("test_comparison_available"):
-            fh.write(
-                f'<p class="comparison-note">Compared with run '
-                f'#{esc(str(latest.get("compared_with_run_id", "")))}. '
-                f'<span class="change-badge change-new">New</span> test, '
-                f'<span class="change-badge change-updated">previous status &rarr; current status</span>.</p>\n'
-            )
-        else:
-            fh.write('<p class="comparison-note">No previous test-level data is available for comparison.</p>\n')
-        if latest_tests:
-            fh.write('<table class="all-tests"><thead><tr><th>Test</th><th>Source</th><th>Status</th><th>Change</th></tr></thead><tbody id="all-tests-body">\n')
-            for test in latest_tests:
-                title = test.get("title", "")
-                short = short_name(title)
-                short = short[-90:] if len(short) > 90 else short
-                status = test.get("status", "unknown")
-                status_class = {
-                    "passed": "status-passed",
-                    "failed": "status-failed",
-                    "flaky": "status-flaky",
-                    "skipped": "status-skipped",
-                }.get(status, "")
-                if test.get("change") == "new":
-                    change = '<span class="change-badge change-new">New</span>'
-                elif test.get("change") == "changed":
-                    previous_status = esc(test.get("previous_status", "unknown"))
-                    change = (
-                        f'<span class="change-badge change-updated">'
-                        f'{previous_status} &rarr; {esc(status)}</span>'
-                    )
-                else:
-                    change = "—"
-                fh.write(
-                    f'<tr data-test-title="{esc(title)}">'
-                    f'<td title="{esc(title)}">{esc(short)}</td>'
-                    f'<td>{esc(test.get("source", ""))}</td>'
-                    f'<td><span class="status-badge {status_class}">{esc(status)}</span></td>'
-                    f'<td>{change}</td></tr>\n'
-                )
-            fh.write('</tbody></table>\n')
-        else:
-            fh.write('<p class="comparison-note">No tests were found in the latest run.</p>\n')
-
-        # Per-run drill-down picker (placed before aggregate sections so it's immediately visible)
-        fh.write('<div class="section-lbl">Inspect a specific run</div>\n')
+        # Select a run before showing its test list; newest run is selected by default.
+        fh.write('<div class="section-lbl">Tests in selected run</div>\n')
         fh.write('<select id="run-picker" style="font-size:.8rem;padding:.35rem .6rem;border:1px solid #e2e8f0;border-radius:.4rem;background:#fff;color:#374151;width:100%;max-width:42rem;cursor:pointer">\n')
-        fh.write('<option value="">&#8212; select a run to inspect &#8212;</option>\n')
         for _i, _run in enumerate(reversed(runs)):
             _orig_idx = len(runs) - 1 - _i
             _ts = _run["timestamp"][:16].replace("T", " ")
@@ -544,34 +446,81 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
                 f"{_status} Run #{_run['run_id']} — {_ts}Z"
                 f" — {_run.get('passed', 0)}p / {_run.get('failed', 0)}f"
                 f" / {_run.get('flaky_count', 0)} flaky"
-                f" / shell {_run.get('shell_passed', 0)}p {_run.get('shell_failed', 0)}f"
+                f" / JUnit {_run.get('shell_passed', 0)}p {_run.get('shell_failed', 0)}f"
             )
-            fh.write(f'<option value="{_orig_idx}">{esc(_label)}</option>\n')
+            _selected = " selected" if _orig_idx == len(runs) - 1 else ""
+            fh.write(f'<option value="{_orig_idx}"{_selected}>{esc(_label)}</option>\n')
         fh.write('</select>\n')
-        fh.write('<div id="run-detail" style="display:none;margin-top:.875rem"></div>\n')
+        fh.write('<div id="selected-run-tests"></div>\n')
+        fh.write('<div id="run-detail" style="margin-top:.875rem"></div>\n')
         _runs_json = json.dumps(runs).replace('</', '<\\/')
         fh.write(f'<script>var RUNS={_runs_json};</script>\n')
         fh.write('''\
 <script>
 (function(){
   var picker=document.getElementById('run-picker');
+  var testsBox=document.getElementById('selected-run-tests');
   var detail=document.getElementById('run-detail');
   function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
   function fmtDur(ms){if(!ms)return '&mdash;';var s=ms/1000;if(s<60)return s.toFixed(0)+'s';return Math.floor(s/60)+'m '+Math.floor(s%60)+'s';}
   function shortName(t){var p=t.split('>').map(function(x){return x.trim();}).filter(Boolean);return p.length>=2?p.slice(-2).join(' › '):(p[p.length-1]||t);}
   function clip(s,n){return s.length>n?s.slice(-n):s;}
+  function renderTests(run){
+    var tests=run.tests||[];
+    var counts={passed:0,failed:0,flaky:0,skipped:0};
+    for(var i=0;i<tests.length;i++){
+      if(Object.prototype.hasOwnProperty.call(counts,tests[i].status)){counts[tests[i].status]++;}
+    }
+    var html='<div class="stats-row" style="grid-template-columns:repeat(5,1fr);margin:.6rem 0">'
+      +'<div class="stat-box"><div class="stat-val">'+tests.length+'</div><div class="stat-lbl">Tests</div></div>'
+      +'<div class="stat-box"><div class="stat-val">'+counts.passed+'</div><div class="stat-lbl">Passed</div></div>'
+      +'<div class="stat-box stat-fail"><div class="stat-val">'+counts.failed+'</div><div class="stat-lbl">Failed</div></div>'
+      +'<div class="stat-box stat-flaky"><div class="stat-val">'+counts.flaky+'</div><div class="stat-lbl">Flaky</div></div>'
+      +'<div class="stat-box"><div class="stat-val">'+counts.skipped+'</div><div class="stat-lbl">Skipped</div></div>'
+      +'</div>';
+    if(run.test_comparison_available){
+      html+='<p class="comparison-note">Compared with run #'+esc(run.compared_with_run_id)+'. '
+        +'<span class="change-badge change-new">New</span> test, '
+        +'<span class="change-badge change-updated">previous status &rarr; current status</span>.</p>';
+    }else{
+      html+='<p class="comparison-note">No previous test-level data is available for comparison.</p>';
+    }
+    if(!tests.length){
+      html+='<p class="comparison-note">No test-level results were recorded for this run.</p>';
+      testsBox.innerHTML=html;
+      return;
+    }
+    html+='<table class="all-tests"><thead><tr><th>Test</th><th>Source</th><th>Status</th><th>Change</th></tr></thead><tbody id="all-tests-body">';
+    for(var i=0;i<tests.length;i++){
+      var test=tests[i],title=test.title||'',status=test.status||'unknown';
+      var statusClass={passed:'status-passed',failed:'status-failed',flaky:'status-flaky',skipped:'status-skipped'}[status]||'';
+      var change='—';
+      if(test.change==='new'){
+        change='<span class="change-badge change-new">New</span>';
+      }else if(test.change==='changed'){
+        change='<span class="change-badge change-updated">'+esc(test.previous_status||'unknown')+' &rarr; '+esc(status)+'</span>';
+      }
+      html+='<tr data-test-title="'+esc(title)+'"><td title="'+esc(title)+'">'+esc(clip(shortName(title),90))+'</td>'
+        +'<td>'+esc(test.source||'')+'</td><td><span class="status-badge '+statusClass+'">'+esc(status)+'</span></td>'
+        +'<td>'+change+'</td></tr>';
+    }
+    html+='</tbody></table>';
+    testsBox.innerHTML=html;
+    var aggPicker=document.getElementById('agg-picker');
+    if(aggPicker){aggPicker.dispatchEvent(new Event('change'));}
+  }
   function renderRun(run){
-    if(!run){detail.style.display='none';return;}
-    detail.style.display='';
+    if(!run){testsBox.innerHTML='';detail.innerHTML='';return;}
+    renderTests(run);
     var ts=(run.timestamp||'').replace('T',' ').slice(0,16)+' UTC';
     var html='<div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;padding:.5rem 0 .75rem;border-top:1px solid #e2e8f0">'
       +'<strong style="font-size:.875rem">Run #'+esc(run.run_id)+'</strong>'
       +'<span style="font-size:.78rem;color:#64748b">'+esc(ts)+'</span>'
       +'<a href="'+esc(run.run_url)+'" target="_blank" style="font-size:.78rem">View on GitHub ↗</a>'
       +'</div>';
-    // Failed Playwright tests
+    // Failed tests from JSON results
     var failed=run.failed_tests||[];
-    html+='<div class="section-lbl">Failed Playwright tests ('+failed.length+')</div>';
+    html+='<div class="section-lbl">Failed tests from JSON results ('+failed.length+')</div>';
     if(!failed.length){
       html+='<p style="font-size:.8rem;color:#15803d;margin:.2rem 0">No failures ✓</p>';
     }else{
@@ -580,10 +529,10 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
         html+='<tr><td title="'+esc(t.title)+'">'+esc(s)+'</td><td style="font-family:monospace;font-size:.7rem;color:#6b7280;text-align:left;max-width:22rem;white-space:pre-wrap">'+esc(e)+'</td></tr>';}
       html+='</table>';
     }
-    // Failed shell tests
+    // Failed tests from JUnit results
     var sf=run.shell_failed_tests||[];
     if(run.shell_failed>0||sf.length){
-      html+='<div class="section-lbl">Failed shell tests ('+sf.length+')</div>';
+      html+='<div class="section-lbl">Failed tests from JUnit results ('+sf.length+')</div>';
       if(!sf.length){html+='<p style="font-size:.8rem;color:#15803d;margin:.2rem 0">No failures ✓</p>';}
       else{html+='<table><tr><th>Test</th><th>Error</th></tr>';
         for(var i=0;i<sf.length;i++){var t=sf[i],s=clip(shortName(t.title),65),e=(t.error||'').slice(0,140);
@@ -609,10 +558,62 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
     }
     detail.innerHTML=html;
   }
-  picker.addEventListener('change',function(){renderRun(this.value!==''?RUNS[parseInt(this.value,10)]:null);});
+  picker.addEventListener('change',function(){renderRun(RUNS[parseInt(this.value,10)]);});
+  renderRun(RUNS[parseInt(picker.value,10)]);
 })();
 </script>
 ''')
+        fh.write(f'<div class="card-header"><h2 class="card-title">Last 30 days &mdash; {len(runs)} run(s)</h2>')
+        fh.write(f'<span class="rate-pill {rate_cls}">{pass_rate}% pass rate</span></div>\n')
+
+        fh.write('<div class="section-lbl">JSON test results</div>\n')
+        fh.write('<div class="stats-row">\n')
+        fh.write(f'<div class="stat-box"><div class="stat-val">{avg_total}</div><div class="stat-lbl">Avg tests/run</div></div>\n')
+        fh.write(f'<div class="stat-box"><div class="stat-val">{avg_passed}</div><div class="stat-lbl">Avg passed/run</div></div>\n')
+        fh.write(f'<div class="stat-box stat-fail"><div class="stat-val">{total_failed}</div><div class="stat-lbl">Total failures</div></div>\n')
+        fh.write(f'<div class="stat-box stat-flaky"><div class="stat-val">{total_flaky}</div><div class="stat-lbl">Total flaky</div></div>\n')
+        fh.write('</div>\n')
+        if any(durations):
+            fh.write('<div class="section-lbl">Execution time</div>\n')
+            fh.write('<div class="stats-row" style="grid-template-columns:repeat(3,1fr)">\n')
+            fh.write(f'<div class="stat-box"><div class="stat-val">{fmt_dur(avg_dur_ms)}</div><div class="stat-lbl">Avg run time</div></div>\n')
+            fh.write(f'<div class="stat-box"><div class="stat-val">{fmt_dur(min_dur_ms)}</div><div class="stat-lbl">Fastest run</div></div>\n')
+            fh.write(f'<div class="stat-box"><div class="stat-val">{fmt_dur(max_dur_ms)}</div><div class="stat-lbl">Slowest run</div></div>\n')
+            fh.write('</div>\n')
+
+        max_total = max((r.get("total", 0) + r.get("shell_passed", 0) + r.get("shell_failed", 0) for r in runs), default=1) or 1
+        fh.write('<div class="spark-label">Tests per run (all configured sources) — color shows pass/fail</div>\n')
+        fh.write('<div class="sparkline" title="Total tests per run (newest → oldest)">')
+        for run in reversed(runs):
+            pw_failed   = run["failed"]
+            pw_flaky    = run.get("flaky_count", 0)
+            sh_failed   = run.get("shell_failed", 0)
+            issues      = pw_failed + pw_flaky + sh_failed
+            run_total   = run.get("total", 0) + run.get("shell_passed", 0) + sh_failed
+            h           = max(8, round(60 * run_total / max_total))
+            if is_all_failed_run(run):
+                color = "#1e293b"
+            elif issues == 0:
+                color = "#22c55e"
+            elif pw_failed > 0 and pw_flaky > 0:
+                red_pct    = round(100 * pw_failed / issues, 1)
+                yellow_pct = 100 - red_pct
+                color = f"linear-gradient(to top,#eab308 0%,#eab308 {yellow_pct}%,#ef4444 {yellow_pct}%)"
+            elif pw_failed > 0 or sh_failed > 0:
+                color = "#ef4444"
+            else:
+                color = "#eab308"
+            dur_label = f" — ⏱ {fmt_dur(run.get('duration_ms', 0))}" if run.get("duration_ms", 0) > 0 else ""
+            label = (
+                f"Run #{run['run_id']}{dur_label} — "
+                f"JSON: {run.get('passed', 0)} passed / {pw_failed} failed / {pw_flaky} flaky / {run.get('skipped', 0)} skipped — "
+                f"JUnit: {run.get('shell_passed', 0)} passed / {sh_failed} failed"
+            )
+            fh.write(
+                f'<a href="{esc(run["run_url"])}" target="_blank" title="{esc(label)}">'
+                f'<div class="bar" style="height:{h}px;background:{color}"></div></a>'
+            )
+        fh.write('</div>\n')
 
         # Aggregate test trends picker
         _agg_top     = [[t, c] for t, c in top]
@@ -687,8 +688,8 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
 </script>
 ''')
 
-        # Shell tests section
-        fh.write('<div class="section-lbl">JUnit tests</div>\n')
+        # JUnit results section
+        fh.write('<div class="section-lbl">JUnit-format test results</div>\n')
         fh.write('<div class="stats-row" style="margin-bottom:.5rem">\n')
         fh.write(f'<div class="stat-box"><div class="stat-val">{shell_avg_total}</div><div class="stat-lbl">Avg tests/run</div></div>\n')
         fh.write(f'<div class="stat-box"><div class="stat-val">{shell_avg_passed}</div><div class="stat-lbl">Avg passed/run</div></div>\n')
@@ -696,14 +697,14 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
         fh.write(f'<div class="stat-box stat-flaky"><div class="stat-val">{shell_total_skipped}</div><div class="stat-lbl">Total skipped</div></div>\n')
         fh.write('</div>\n')
         if top_shell:
-            fh.write('<table><tr><th>Shell test</th><th style="width:4rem">Fails</th></tr>\n')
+            fh.write('<table><tr><th>JUnit test</th><th style="width:4rem">Fails</th></tr>\n')
             for title, count in top_shell:
                 s = short_name(title)
                 short = s[-70:] if len(s) > 70 else s
                 fh.write(f'<tr><td title="{esc(title)}">{esc(short)}</td><td>{count}</td></tr>\n')
             fh.write('</table>\n')
         else:
-            fh.write('<p style="font-size:.8rem;color:#94a3b8;margin:.25rem 0">No shell test failures recorded.</p>\n')
+            fh.write('<p style="font-size:.8rem;color:#94a3b8;margin:.25rem 0">No JUnit test failures recorded.</p>\n')
 
         fh.write('</div>\n')
 

@@ -76,10 +76,26 @@ class DetailedStatsTests(unittest.TestCase):
             self.assertEqual(tests[("Playwright", "suite > changes")]["previous_status"], "passed")
             self.assertEqual(tests[("Playwright", "suite > changes")]["status"], "failed")
             self.assertEqual(tests[("JUnit", "shell > check")]["change"], "changed")
-            self.assertIn("Compared with run #1", dashboard)
+            self.assertIn('"compared_with_run_id": "1"', dashboard)
             self.assertIn("New</span>", dashboard)
-            self.assertIn("passed &rarr; failed", dashboard)
+            self.assertIn("&rarr; '+esc(status)", dashboard)
             self.assertIn("test-trend-match", dashboard)
+            self.assertIn(
+                '"flaky": [["shell > check", 1], ["suite > changes", 1]]',
+                dashboard,
+            )
+            self.assertIn("else if(v==='flaky')", dashboard)
+            self.assertIn("else if(v==='longest')", dashboard)
+            self.assertIn("else if(v==='retried')", dashboard)
+            self.assertIn('<option value="1" selected>', dashboard)
+            self.assertLess(
+                dashboard.index('id="run-picker"'),
+                dashboard.index('<h2 class="card-title">Last 30 days'),
+            )
+            self.assertIn(
+                "picker.addEventListener('change',function(){renderRun(RUNS[parseInt(this.value,10)]);});",
+                dashboard,
+            )
 
     def test_preserves_rolling_failure_flaky_runtime_and_shell_statistics(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -90,14 +106,31 @@ class DetailedStatsTests(unittest.TestCase):
                 "stats": {"expected": 2, "unexpected": 1, "flaky": 1, "skipped": 1, "duration": 1200},
                 "suites": [{
                     "title": "suite",
-                    "specs": [{
-                        "title": "fails",
-                        "file": "tests/example.spec.js",
-                        "tests": [{
-                            "status": "unexpected",
-                            "results": [{"duration": 300, "errors": [{"message": "failure detail"}]}],
-                        }],
-                    }],
+                    "specs": [
+                        {
+                            "title": "fails",
+                            "file": "tests/example.spec.js",
+                            "tests": [{
+                                "status": "unexpected",
+                                "results": [{"duration": 300, "errors": [{"message": "failure detail"}]}],
+                            }],
+                        },
+                        {
+                            "title": "retries",
+                            "file": "tests/example.spec.js",
+                            "tests": [{"status": "flaky", "results": [{"duration": 500}, {"duration": 400}]}],
+                        },
+                        {
+                            "title": "passes",
+                            "file": "tests/example.spec.js",
+                            "tests": [{"status": "expected"}, {"status": "expected"}],
+                        },
+                        {
+                            "title": "skips",
+                            "file": "tests/example.spec.js",
+                            "tests": [{"status": "skipped"}],
+                        },
+                    ],
                 }],
             }))
             shell_xml = root / "shell.xml"
@@ -128,7 +161,14 @@ class DetailedStatsTests(unittest.TestCase):
             self.assertEqual((run["shell_passed"], run["shell_failed"], run["shell_skipped"]), (1, 1, 1))
             self.assertIn("failure detail", run["failed_tests"][0]["error"])
             self.assertIn("Test trends (last 30 days)", dashboard)
+            self.assertIn('"flaky": [["suite > retries", 1]]', dashboard)
+            self.assertIn("else if(v==='flaky')", dashboard)
+            self.assertIn("else if(v==='longest')", dashboard)
+            self.assertIn("else if(v==='retried')", dashboard)
             self.assertIn("shell failure", run["shell_failed_tests"][0]["error"])
+            self.assertIn("JSON test results", dashboard)
+            self.assertIn("JUnit-format test results", dashboard)
+            self.assertNotIn("Failed shell tests", dashboard)
 
     def test_records_shell_failure_when_playwright_results_are_unavailable(self):
         with tempfile.TemporaryDirectory() as tmp:
