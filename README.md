@@ -101,10 +101,20 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Restore the existing Pages site
-        uses: actions/checkout@v4
-        with:
-          ref: gh-pages
-          path: site
+        shell: bash
+        run: |
+          mkdir -p site
+          if git ls-remote --exit-code --heads origin gh-pages >/dev/null; then
+            git fetch --no-tags origin gh-pages
+            git archive FETCH_HEAD | tar -x -C site
+          else
+            status=$?
+            if [ "$status" -eq 2 ]; then
+              echo "No gh-pages branch exists yet; starting a new site."
+            else
+              exit "$status"
+            fi
+          fi
 
       - name: Run tests
         run: ./scripts/run-tests.sh # Configure your runner to write JUnit XML.
