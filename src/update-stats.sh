@@ -40,7 +40,7 @@ run_url         = "{}/{}/actions/runs/{}".format(
 cutoff = datetime.now(timezone.utc) - timedelta(days=30)
 
 
-def walk_suites(suite, parents, failed_tests, flaky_tests, slow_tests):
+def walk_suites(suite, parents, failed_tests, flaky_tests, slow_tests, all_tests):
     suite_title = suite.get("title", "")
     cur = parents + ([suite_title] if suite_title else [])
     for spec in suite.get("specs", []):
@@ -49,6 +49,17 @@ def walk_suites(suite, parents, failed_tests, flaky_tests, slow_tests):
         file_path  = spec.get("file", "")
         for test in spec.get("tests", []):
             status = test.get("status", "")
+            all_tests.append({
+                "source": "Playwright",
+                "title": full_title,
+                "file": file_path,
+                "status": {
+                    "expected": "passed",
+                    "unexpected": "failed",
+                    "flaky": "flaky",
+                    "skipped": "skipped",
+                }.get(status, status or "unknown"),
+            })
             best_dur = max((r.get("duration", 0) for r in test.get("results", [])), default=0)
             if best_dur > 0:
                 slow_tests.append({"title": full_title, "duration_ms": best_dur})
@@ -71,7 +82,7 @@ def walk_suites(suite, parents, failed_tests, flaky_tests, slow_tests):
                     "attempts": len(test.get("results", [])),
                 })
     for sub in suite.get("suites", []):
-        walk_suites(sub, cur, failed_tests, flaky_tests, slow_tests)
+        walk_suites(sub, cur, failed_tests, flaky_tests, slow_tests, all_tests)
 
 
 all_json_files = sorted(glob.glob(os.path.join(results_dir, "*.json")))
@@ -81,6 +92,7 @@ agg = {"expected": 0, "unexpected": 0, "flaky": 0, "skipped": 0, "duration_ms": 
 failed_tests = []
 flaky_tests  = []
 slow_tests   = []
+all_tests    = []
 
 for json_file in all_json_files:
     try:
@@ -94,7 +106,7 @@ for json_file in all_json_files:
         agg[k] += raw.get(k, 0)
     agg["duration_ms"] += raw.get("duration", 0)
     for suite in data.get("suites", []):
-        walk_suites(suite, [], failed_tests, flaky_tests, slow_tests)
+        walk_suites(suite, [], failed_tests, flaky_tests, slow_tests, all_tests)
 
 # ── Shell tests (JUnit XML) ─────────────────────────────────────────────────
 
@@ -112,8 +124,10 @@ if shell_tests_xml and os.path.exists(shell_tests_xml):
             for tc in suite.findall("testcase"):
                 if tc.find("skipped") is not None:
                     shell_skipped += 1
+                    shell_status = "skipped"
                 elif tc.find("failure") is not None or tc.find("error") is not None:
                     shell_failed += 1
+                    shell_status = "failed"
                     elem = tc.find("failure")
                     if elem is None:
                         elem = tc.find("error")
@@ -125,6 +139,14 @@ if shell_tests_xml and os.path.exists(shell_tests_xml):
                     })
                 else:
                     shell_passed += 1
+                    shell_status = "passed"
+                shell_title = f"{suite_name} > {tc.get('name', '?')}"
+                all_tests.append({
+                    "source": "JUnit",
+                    "title": shell_title,
+                    "file": tc.get("classname", ""),
+                    "status": shell_status,
+                })
         print(f"[stats] Shell tests: passed={shell_passed} failed={shell_failed} skipped={shell_skipped}")
         if shell_failed_tests:
             print(f"[stats] Shell test failures ({len(shell_failed_tests)}):")
@@ -148,6 +170,7 @@ run_entry = {
     "slowest_tests":       sorted(slow_tests, key=lambda x: -x["duration_ms"])[:10],
     "failed_tests":        failed_tests,
     "flaky_tests":         flaky_tests,
+    "tests":               all_tests,
     "shell_passed":        shell_passed,
     "shell_failed":        shell_failed,
     "shell_skipped":       shell_skipped,
@@ -186,6 +209,25 @@ store["runs"] = [
 pruned = prev_count - len(store["runs"])
 if pruned > 0:
     print(f"[stats] Pruned {pruned} run(s) (duplicate run_id or older than 30 days)")
+
+previous_run = max(store["runs"], key=lambda r: r["timestamp"], default=None)
+previous_tests = None
+if previous_run is not None and isinstance(previous_run.get("tests"), list):
+    previous_tests = {
+        (t.get("source", ""), t.get("file", ""), t.get("title", "")): t.get("status", "")
+        for t in previous_run["tests"]
+    }
+    for test in all_tests:
+        key = (test["source"], test["file"], test["title"])
+        if key not in previous_tests:
+            test["change"] = "new"
+        elif previous_tests[key] != test["status"]:
+            test["change"] = "changed"
+            test["previous_status"] = previous_tests[key]
+
+run_entry["test_comparison_available"] = previous_tests is not None
+if previous_run is not None:
+    run_entry["compared_with_run_id"] = previous_run.get("run_id", "")
 
 store["runs"].append(run_entry)
 store["runs"].sort(key=lambda r: r["timestamp"])
@@ -356,6 +398,16 @@ td:last-child{{text-align:right;font-weight:700;color:#dc2626;white-space:nowrap
 .flaky-list{{margin:.35rem 0 0;padding-left:1rem;font-size:.8rem;color:#374151}}
 .flaky-list li{{margin:.2rem 0}}
 .flaky-list strong{{color:#d97706}}
+.all-tests td:last-child{{text-align:left;font-weight:400;color:#374151;white-space:normal}}
+.comparison-note{{font-size:.78rem;color:#64748b;margin:.25rem 0 .5rem}}
+.status-badge,.change-badge{{display:inline-block;border-radius:999px;padding:.1rem .45rem;font-size:.7rem;font-weight:700;white-space:nowrap}}
+.status-passed{{background:#dcfce7;color:#15803d}}
+.status-failed{{background:#fee2e2;color:#b91c1c}}
+.status-flaky{{background:#fef3c7;color:#b45309}}
+.status-skipped{{background:#f1f5f9;color:#64748b}}
+.change-new{{background:#dbeafe;color:#1d4ed8}}
+.change-updated{{background:#ffedd5;color:#c2410c}}
+#all-tests-body tr.test-trend-match td{{background:#fef3c7}}
 a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
 .empty{{text-align:center;padding:4rem;color:#94a3b8}}
 </style>
@@ -431,6 +483,52 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
                 f'<div class="bar" style="height:{h}px;background:{color}"></div></a>'
             )
         fh.write('</div>\n')
+
+        latest = runs[-1]
+        latest_tests = latest.get("tests", [])
+        fh.write('<div class="section-lbl">All tests in latest run</div>\n')
+        if latest.get("test_comparison_available"):
+            fh.write(
+                f'<p class="comparison-note">Compared with run '
+                f'#{esc(str(latest.get("compared_with_run_id", "")))}. '
+                f'<span class="change-badge change-new">New</span> test, '
+                f'<span class="change-badge change-updated">previous status &rarr; current status</span>.</p>\n'
+            )
+        else:
+            fh.write('<p class="comparison-note">No previous test-level data is available for comparison.</p>\n')
+        if latest_tests:
+            fh.write('<table class="all-tests"><thead><tr><th>Test</th><th>Source</th><th>Status</th><th>Change</th></tr></thead><tbody id="all-tests-body">\n')
+            for test in latest_tests:
+                title = test.get("title", "")
+                short = short_name(title)
+                short = short[-90:] if len(short) > 90 else short
+                status = test.get("status", "unknown")
+                status_class = {
+                    "passed": "status-passed",
+                    "failed": "status-failed",
+                    "flaky": "status-flaky",
+                    "skipped": "status-skipped",
+                }.get(status, "")
+                if test.get("change") == "new":
+                    change = '<span class="change-badge change-new">New</span>'
+                elif test.get("change") == "changed":
+                    previous_status = esc(test.get("previous_status", "unknown"))
+                    change = (
+                        f'<span class="change-badge change-updated">'
+                        f'{previous_status} &rarr; {esc(status)}</span>'
+                    )
+                else:
+                    change = "—"
+                fh.write(
+                    f'<tr data-test-title="{esc(title)}">'
+                    f'<td title="{esc(title)}">{esc(short)}</td>'
+                    f'<td>{esc(test.get("source", ""))}</td>'
+                    f'<td><span class="status-badge {status_class}">{esc(status)}</span></td>'
+                    f'<td>{change}</td></tr>\n'
+                )
+            fh.write('</tbody></table>\n')
+        else:
+            fh.write('<p class="comparison-note">No tests were found in the latest run.</p>\n')
 
         # Per-run drill-down picker (placed before aggregate sections so it's immediately visible)
         fh.write('<div class="section-lbl">Inspect a specific run</div>\n')
@@ -539,6 +637,15 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
   function fmtDur(ms){if(!ms)return '&mdash;';var s=ms/1000;if(s<60)return s.toFixed(0)+'s';return Math.floor(s/60)+'m '+Math.floor(s%60)+'s';}
   function shortName(t){var p=t.split('>').map(function(x){return x.trim();}).filter(Boolean);return p.length>=2?p.slice(-2).join(' › '):(p[p.length-1]||t);}
   function clip(s,n){return s.length>n?s.slice(-n):s;}
+  function highlightTests(v){
+    var key=v==='longest'?'slow':v, selected={};
+    var data=AGG[key]||[];
+    for(var i=0;i<data.length;i++){selected[data[i][0]]=true;}
+    var rows=document.querySelectorAll('#all-tests-body tr');
+    for(var i=0;i<rows.length;i++){
+      rows[i].classList.toggle('test-trend-match',!!selected[rows[i].getAttribute('data-test-title')]);
+    }
+  }
   function render(v){
     var html='',d;
     if(v==='top'){
@@ -571,6 +678,7 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
         html+='</table>';}
     }
     box.innerHTML=html;
+    highlightTests(v);
   }
   sel.addEventListener('change',function(){render(this.value);});
   render('top');
@@ -579,7 +687,7 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
 ''')
 
         # Shell tests section
-        fh.write('<div class="section-lbl">Shell unit tests (POSIX sh)</div>\n')
+        fh.write('<div class="section-lbl">JUnit tests</div>\n')
         fh.write('<div class="stats-row" style="margin-bottom:.5rem">\n')
         fh.write(f'<div class="stat-box"><div class="stat-val">{shell_avg_total}</div><div class="stat-lbl">Avg tests/run</div></div>\n')
         fh.write(f'<div class="stat-box"><div class="stat-val">{shell_avg_passed}</div><div class="stat-lbl">Avg passed/run</div></div>\n')

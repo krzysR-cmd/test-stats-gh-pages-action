@@ -10,6 +10,77 @@ SCRIPT = Path(__file__).parents[1] / "src" / "update-stats.sh"
 
 
 class DetailedStatsTests(unittest.TestCase):
+    def test_lists_all_tests_and_marks_new_or_changed_statuses(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            results = root / "results"
+            results.mkdir()
+            shell_xml = root / "shell.xml"
+            site = root / "site"
+
+            def write_results(tests, shell_failure=False):
+                (results / "playwright.json").write_text(json.dumps({
+                    "stats": {
+                        "expected": sum(status == "expected" for _, status in tests),
+                        "unexpected": sum(status == "unexpected" for _, status in tests),
+                        "flaky": sum(status == "flaky" for _, status in tests),
+                        "skipped": sum(status == "skipped" for _, status in tests),
+                        "duration": 1200,
+                    },
+                    "suites": [{
+                        "title": "suite",
+                        "specs": [{
+                            "title": title,
+                            "file": "tests/example.spec.js",
+                            "tests": [{"status": status, "results": []}],
+                        } for title, status in tests],
+                    }],
+                }))
+                failure = '<failure message="failed"/>' if shell_failure else ""
+                shell_xml.write_text(
+                    '<testsuites><testsuite name="shell">'
+                    f'<testcase classname="sh" name="check">{failure}</testcase>'
+                    '</testsuite></testsuites>'
+                )
+
+            def run(number):
+                env = os.environ.copy()
+                env.update({
+                    "RESULTS_DIR": str(results),
+                    "SITE_DIR": str(site),
+                    "SHELL_TESTS_XML": str(shell_xml),
+                    "GITHUB_RUN_NUMBER": str(number),
+                    "GITHUB_RUN_ID": f"run-{number}",
+                    "GITHUB_SERVER_URL": "https://github.com",
+                    "GITHUB_REPOSITORY": "owner/repo",
+                })
+                subprocess.run(["bash", str(SCRIPT)], check=True, env=env, capture_output=True, text=True)
+
+            write_results([("stable", "expected"), ("changes", "expected")])
+            run(1)
+            write_results([
+                ("stable", "expected"),
+                ("changes", "unexpected"),
+                ("added", "expected"),
+            ], shell_failure=True)
+            run(2)
+
+            store = json.loads((site / "stats" / "runs.json").read_text())
+            latest = store["runs"][-1]
+            tests = {(test["source"], test["title"]): test for test in latest["tests"]}
+            dashboard = (site / "stats" / "index.html").read_text()
+
+            self.assertEqual(len(latest["tests"]), 4)
+            self.assertNotIn("change", tests[("Playwright", "suite > stable")])
+            self.assertEqual(tests[("Playwright", "suite > added")]["change"], "new")
+            self.assertEqual(tests[("Playwright", "suite > changes")]["previous_status"], "passed")
+            self.assertEqual(tests[("Playwright", "suite > changes")]["status"], "failed")
+            self.assertEqual(tests[("JUnit", "shell > check")]["change"], "changed")
+            self.assertIn("Compared with run #1", dashboard)
+            self.assertIn("New</span>", dashboard)
+            self.assertIn("passed &rarr; failed", dashboard)
+            self.assertIn("test-trend-match", dashboard)
+
     def test_preserves_rolling_failure_flaky_runtime_and_shell_statistics(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

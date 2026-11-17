@@ -1,0 +1,81 @@
+name: Test statistics Pages
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install test reporter
+        run: python3 -m pip install pytest
+
+      - name: Run tests and write JUnit report
+        run: |
+          mkdir -p test-results
+          python3 -m pytest test --junitxml=test-results/results.xml
+
+      - name: Prepare site directory
+        run: mkdir -p site
+
+      - name: Restore existing Pages content
+        shell: bash
+        run: |
+          if git ls-remote --exit-code --heads origin gh-pages >/dev/null; then
+            git fetch --no-tags origin gh-pages
+            git archive FETCH_HEAD | tar -x -C site
+          else
+            status=$?
+            if [ "$status" -eq 2 ]; then
+              echo "No gh-pages branch exists yet; starting a new site."
+            else
+              exit "$status"
+            fi
+          fi
+
+      - name: Generate test statistics dashboard
+        run: bash src/update-stats.sh
+        env:
+          RESULTS_DIR: downloaded-results
+          SITE_DIR: site
+          SHELL_TESTS_XML: test-results/results.xml
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_SERVER_URL: ${{ github.server_url }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pages-site
+          path: site
+
+  publish:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: pages-site
+          path: site
+
+      - name: Publish dashboard
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: site
+          force_orphan: true
