@@ -19,11 +19,23 @@ inputs:
   stats-subdirectory:
     description: Relative directory within site-directory for runs.json and index.html.
     required: false
-    default: stats
+    default: reusable-stats
   report-name:
     description: Label used in the GitHub Actions summary.
     required: false
     default: Test results
+  detailed-statistics:
+    description: Generate the detailed Playwright and shell-test 30-day dashboard.
+    required: false
+    default: "true"
+  playwright-results-directory:
+    description: Directory containing Playwright JSON reports for the detailed dashboard.
+    required: false
+    default: downloaded-results
+  shell-test-results:
+    description: Optional JUnit XML file containing shell test results.
+    required: false
+    default: ""
 outputs:
   total:
     description: Number of tests across all input files.
@@ -48,3 +60,15 @@ runs:
         INPUT_STATS_SUBDIRECTORY: ${{ inputs.stats-subdirectory }}
         INPUT_REPORT_NAME: ${{ inputs.report-name }}
       run: python3 "${{ github.action_path }}/src/main.py"
+    - name: Generate detailed 30-day dashboard
+      if: inputs.detailed-statistics == 'true'
+      shell: bash
+      env:
+        RESULTS_DIR: ${{ inputs.playwright-results-directory }}
+        SITE_DIR: ${{ inputs.site-directory }}
+        SHELL_TESTS_XML: ${{ inputs.shell-test-results }}
+        GITHUB_RUN_NUMBER: ${{ github.run_number }}
+        GITHUB_RUN_ID: ${{ github.run_id }}
+        GITHUB_SERVER_URL: ${{ github.server_url }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
+      run: bash "${{ github.action_path }}/src/update-stats.sh"

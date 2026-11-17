@@ -17,9 +17,10 @@ other site content and perform one deployment.
       shell-tests.xml
     format: auto
     site-directory: site
-    stats-subdirectory: stats
+    stats-subdirectory: reusable-stats
     history-days: 30
     report-name: CI tests
+    detailed-statistics: "true"
 ```
 
 The action currently supports JUnit XML (`.xml`) and Playwright JSON (`.json`)
@@ -38,10 +39,17 @@ It creates/updates:
 - `<stats-subdirectory>/index.html` — a small static recent-run table.
 - `$GITHUB_STEP_SUMMARY` and action outputs `total`, `passed`, `failed`,
   `skipped`, and `stats-file`.
+- `stats/runs.json` and `stats/index.html` — the detailed rolling 30-day
+  Playwright failure, flakiness, runtime, and shell-test dashboard. Detailed
+  statistics are enabled by default and can be disabled with
+  `detailed-statistics: "false"`.
 
 The `passed` count includes Playwright tests that passed after retries; these
-are also exposed separately as `flaky_count` in the run record. JUnit failures
-and Playwright unexpected tests count as failed.
+are also exposed separately as `flaky_count` in the normalized run record.
+JUnit failures and Playwright unexpected tests count as failed. The detailed
+dashboard uses Playwright JSON and the optional `shell-test-results` JUnit
+file. Other JUnit result files contribute to the normalized results and
+summary.
 
 ## Permissions and deployment
 
