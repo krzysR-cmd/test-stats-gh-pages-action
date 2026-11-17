@@ -71,6 +71,9 @@ class DetailedStatsTests(unittest.TestCase):
             tests = {(test["source"], test["title"]): test for test in latest["tests"]}
             dashboard = (site / "stats" / "index.html").read_text()
 
+            self.assertIn("@media(max-width:640px)", dashboard)
+            self.assertIn(".stats-row,.selected-run-stats,.duration-stats", dashboard)
+            self.assertIn("table{display:block;overflow-x:auto}", dashboard)
             self.assertEqual(len(latest["tests"]), 4)
             self.assertNotIn("change", tests[("Playwright", "suite > stable")])
             self.assertEqual(tests[("Playwright", "suite > added")]["change"], "new")

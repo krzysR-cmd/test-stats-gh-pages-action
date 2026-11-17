@@ -388,6 +388,8 @@ body{{font-family:system-ui,-apple-system,Arial,sans-serif;margin:0;background:#
 .rate-warn{{background:#fef9c3;color:#854d0e}}
 .rate-bad{{background:#fee2e2;color:#b91c1c}}
 .stats-row{{display:grid;grid-template-columns:repeat(4,1fr);gap:.625rem;margin-bottom:.875rem}}
+.selected-run-stats{{grid-template-columns:repeat(5,minmax(0,1fr))}}
+.duration-stats{{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .stat-box{{background:#f8fafc;border:1px solid #e2e8f0;border-radius:.5rem;padding:.6rem .5rem;text-align:center}}
 .stat-val{{font-size:1.15rem;font-weight:700;color:#1a1a2e;line-height:1.2}}
 .stat-lbl{{font-size:.68rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;margin-top:.15rem}}
@@ -422,6 +424,17 @@ td:last-child{{text-align:right;font-weight:700;color:#dc2626;white-space:nowrap
 .test-pagination select{{border:1px solid #cbd5e1;border-radius:.375rem;background:#fff;color:#334155;padding:.3rem}}
 a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
 .empty{{text-align:center;padding:4rem;color:#94a3b8}}
+@media(max-width:640px){{
+  .topbar{{padding:.75rem 1rem;flex-wrap:wrap;gap:.5rem .75rem}}
+  .topbar-title{{flex-basis:calc(100% - 8rem)}}
+  .topbar-meta{{flex-basis:100%}}
+  .page{{padding:1rem .75rem 2rem}}
+  .card{{padding:.875rem}}
+  .card-header{{align-items:flex-start;flex-wrap:wrap;gap:.5rem}}
+  .stats-row,.selected-run-stats,.duration-stats{{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  table{{display:block;overflow-x:auto}}
+  .test-pagination{{justify-content:flex-start}}
+}}
 </style>
 </head><body>
 <div class="topbar">
@@ -521,7 +534,7 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
       counts.flaky=run.flaky_count||0;
       counts.skipped=(run.skipped||0)+(run.shell_skipped||0);
     }
-    var html='<div class="stats-row" style="grid-template-columns:repeat(5,1fr);margin:.6rem 0">'
+    var html='<div class="stats-row selected-run-stats" style="margin:.6rem 0">'
       +'<div class="stat-box"><div class="stat-val">'+counts.total+'</div><div class="stat-lbl">Tests</div></div>'
       +'<div class="stat-box"><div class="stat-val">'+counts.passed+'</div><div class="stat-lbl">Passed</div></div>'
       +'<div class="stat-box stat-fail"><div class="stat-val">'+counts.failed+'</div><div class="stat-lbl">Failed</div></div>'
@@ -631,7 +644,7 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
         fh.write('</div>\n')
         if any(durations):
             fh.write('<div class="section-lbl">Execution time</div>\n')
-            fh.write('<div class="stats-row" style="grid-template-columns:repeat(3,1fr)">\n')
+            fh.write('<div class="stats-row duration-stats">\n')
             fh.write(f'<div class="stat-box"><div class="stat-val">{fmt_dur(avg_dur_ms)}</div><div class="stat-lbl">Avg run time</div></div>\n')
             fh.write(f'<div class="stat-box"><div class="stat-val">{fmt_dur(min_dur_ms)}</div><div class="stat-lbl">Fastest run</div></div>\n')
             fh.write(f'<div class="stat-box"><div class="stat-val">{fmt_dur(max_dur_ms)}</div><div class="stat-lbl">Slowest run</div></div>\n')
