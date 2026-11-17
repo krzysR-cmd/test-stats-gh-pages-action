@@ -49,10 +49,13 @@ def walk_suites(suite, parents, failed_tests, flaky_tests, slow_tests, all_tests
         file_path  = spec.get("file", "")
         for test in spec.get("tests", []):
             status = test.get("status", "")
+            test_results = test.get("results", [])
+            duration_ms = sum(result.get("duration", 0) for result in test_results)
             all_tests.append({
                 "source": "Playwright",
                 "title": full_title,
                 "file": file_path,
+                "duration_ms": duration_ms,
                 "status": {
                     "expected": "passed",
                     "unexpected": "failed",
@@ -60,7 +63,7 @@ def walk_suites(suite, parents, failed_tests, flaky_tests, slow_tests, all_tests
                     "skipped": "skipped",
                 }.get(status, status or "unknown"),
             })
-            best_dur = max((r.get("duration", 0) for r in test.get("results", [])), default=0)
+            best_dur = max((r.get("duration", 0) for r in test_results), default=0)
             if best_dur > 0:
                 slow_tests.append({"title": full_title, "duration_ms": best_dur})
             if status == "unexpected":
@@ -122,6 +125,7 @@ if shell_tests_xml and os.path.exists(shell_tests_xml):
         for suite in suites:
             suite_name = suite.get("name", "")
             for tc in suite.findall("testcase"):
+                duration_ms = round(float(tc.get("time", 0) or 0) * 1000)
                 if tc.find("skipped") is not None:
                     shell_skipped += 1
                     shell_status = "skipped"
@@ -145,6 +149,7 @@ if shell_tests_xml and os.path.exists(shell_tests_xml):
                     "source": "JUnit",
                     "title": shell_title,
                     "file": tc.get("classname", ""),
+                    "duration_ms": duration_ms,
                     "status": shell_status,
                 })
         print(f"[stats] JUnit tests: passed={shell_passed} failed={shell_failed} skipped={shell_skipped}")
@@ -295,7 +300,7 @@ def esc(s):
 
 runs      = store["runs"]
 eligible  = [r for r in runs if not is_all_failed_run(r)]
-top       = top_failing(runs, 10)
+top       = top_failing(runs, 5)
 flaky     = flaky_counts(runs)
 
 total_executed = sum(max(0, r.get("total", 0) - r.get("skipped", 0)) for r in eligible)
@@ -322,14 +327,14 @@ for _r in eligible:
     for _t in _r.get("slowest_tests", []):
         k = _t["title"]
         slow_by_test[k] = max(slow_by_test.get(k, 0), _t["duration_ms"])
-top_slow = sorted(slow_by_test.items(), key=lambda x: -x[1])[:10]
+top_slow = sorted(slow_by_test.items(), key=lambda x: -x[1])[:5]
 
 retry_by_test = {}
 for _r in eligible:
     for _t in _r.get("flaky_tests", []):
         k = _t["title"]
         retry_by_test[k] = max(retry_by_test.get(k, 0), _t.get("attempts", 1))
-most_retried = sorted(retry_by_test.items(), key=lambda x: -x[1])[:10]
+most_retried = sorted(retry_by_test.items(), key=lambda x: -x[1])[:5]
 
 shell_total_passed  = sum(r.get("shell_passed", 0) for r in eligible)
 shell_total_failed  = sum(r.get("shell_failed", 0) for r in eligible)
@@ -463,16 +468,26 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
   var detail=document.getElementById('run-detail');
   function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
   function fmtDur(ms){if(!ms)return '&mdash;';var s=ms/1000;if(s<60)return s.toFixed(0)+'s';return Math.floor(s/60)+'m '+Math.floor(s%60)+'s';}
+  function fmtTestDur(ms){if(typeof ms!=='number'||ms<=0)return '&mdash;';if(ms<1000)return Math.round(ms)+' ms';if(ms<60000)return (ms/1000).toFixed(2)+' s';var s=ms/1000;return Math.floor(s/60)+'m '+(s%60).toFixed(1)+'s';}
   function shortName(t){var p=t.split('>').map(function(x){return x.trim();}).filter(Boolean);return p.length>=2?p.slice(-2).join(' › '):(p[p.length-1]||t);}
   function clip(s,n){return s.length>n?s.slice(-n):s;}
   function renderTests(run){
     var tests=run.tests||[];
-    var counts={passed:0,failed:0,flaky:0,skipped:0};
-    for(var i=0;i<tests.length;i++){
-      if(Object.prototype.hasOwnProperty.call(counts,tests[i].status)){counts[tests[i].status]++;}
+    var counts={total:0,passed:0,failed:0,flaky:0,skipped:0};
+    if(tests.length){
+      counts.total=tests.length;
+      for(var i=0;i<tests.length;i++){
+        if(Object.prototype.hasOwnProperty.call(counts,tests[i].status)){counts[tests[i].status]++;}
+      }
+    }else{
+      counts.total=(run.total||0)+(run.shell_passed||0)+(run.shell_failed||0)+(run.shell_skipped||0);
+      counts.passed=(run.passed||0)+(run.shell_passed||0);
+      counts.failed=(run.failed||0)+(run.shell_failed||0);
+      counts.flaky=run.flaky_count||0;
+      counts.skipped=(run.skipped||0)+(run.shell_skipped||0);
     }
     var html='<div class="stats-row" style="grid-template-columns:repeat(5,1fr);margin:.6rem 0">'
-      +'<div class="stat-box"><div class="stat-val">'+tests.length+'</div><div class="stat-lbl">Tests</div></div>'
+      +'<div class="stat-box"><div class="stat-val">'+counts.total+'</div><div class="stat-lbl">Tests</div></div>'
       +'<div class="stat-box"><div class="stat-val">'+counts.passed+'</div><div class="stat-lbl">Passed</div></div>'
       +'<div class="stat-box stat-fail"><div class="stat-val">'+counts.failed+'</div><div class="stat-lbl">Failed</div></div>'
       +'<div class="stat-box stat-flaky"><div class="stat-val">'+counts.flaky+'</div><div class="stat-lbl">Flaky</div></div>'
@@ -486,11 +501,11 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
       html+='<p class="comparison-note">No previous test-level data is available for comparison.</p>';
     }
     if(!tests.length){
-      html+='<p class="comparison-note">No test-level results were recorded for this run.</p>';
+      html+='<p class="comparison-note">Individual test results were not saved for this run; showing available aggregate counts.</p>';
       testsBox.innerHTML=html;
       return;
     }
-    html+='<table class="all-tests"><thead><tr><th>Test</th><th>Source</th><th>Status</th><th>Change</th></tr></thead><tbody id="all-tests-body">';
+    html+='<table class="all-tests"><thead><tr><th>Test</th><th>Source</th><th>Status</th><th>Execution time</th><th>Change</th></tr></thead><tbody id="all-tests-body">';
     for(var i=0;i<tests.length;i++){
       var test=tests[i],title=test.title||'',status=test.status||'unknown';
       var statusClass={passed:'status-passed',failed:'status-failed',flaky:'status-flaky',skipped:'status-skipped'}[status]||'';
@@ -502,7 +517,7 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
       }
       html+='<tr data-test-title="'+esc(title)+'"><td title="'+esc(title)+'">'+esc(clip(shortName(title),90))+'</td>'
         +'<td>'+esc(test.source||'')+'</td><td><span class="status-badge '+statusClass+'">'+esc(status)+'</span></td>'
-        +'<td>'+change+'</td></tr>';
+        +'<td>'+fmtTestDur(test.duration_ms)+'</td><td>'+change+'</td></tr>';
     }
     html+='</tbody></table>';
     testsBox.innerHTML=html;
@@ -522,7 +537,11 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
     var failed=run.failed_tests||[];
     html+='<div class="section-lbl">Failed tests from JSON results ('+failed.length+')</div>';
     if(!failed.length){
-      html+='<p style="font-size:.8rem;color:#15803d;margin:.2rem 0">No failures ✓</p>';
+      if(run.failed>0){
+        html+='<p class="comparison-note">'+run.failed+' failure(s); individual test details were not saved for this run.</p>';
+      }else{
+        html+='<p style="font-size:.8rem;color:#15803d;margin:.2rem 0">No failures ✓</p>';
+      }
     }else{
       html+='<table><tr><th>Test</th><th>Error (truncated)</th></tr>';
       for(var i=0;i<failed.length;i++){var t=failed[i],s=clip(shortName(t.title),65),e=(t.error||'').slice(0,140);
@@ -533,7 +552,9 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
     var sf=run.shell_failed_tests||[];
     if(run.shell_failed>0||sf.length){
       html+='<div class="section-lbl">Failed tests from JUnit results ('+sf.length+')</div>';
-      if(!sf.length){html+='<p style="font-size:.8rem;color:#15803d;margin:.2rem 0">No failures ✓</p>';}
+      if(!sf.length){
+        html+='<p class="comparison-note">'+run.shell_failed+' failure(s); individual test details were not saved for this run.</p>';
+      }
       else{html+='<table><tr><th>Test</th><th>Error</th></tr>';
         for(var i=0;i<sf.length;i++){var t=sf[i],s=clip(shortName(t.title),65),e=(t.error||'').slice(0,140);
           html+='<tr><td title="'+esc(t.title)+'">'+esc(s)+'</td><td style="font-family:monospace;font-size:.7rem;color:#6b7280;text-align:left;max-width:22rem;white-space:pre-wrap">'+esc(e)+'</td></tr>';}
@@ -542,7 +563,9 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
     // Flaky tests
     var flaky=run.flaky_tests||[];
     html+='<div class="section-lbl">Flaky tests ('+flaky.length+')</div>';
-    if(!flaky.length){html+='<p style="font-size:.8rem;color:#15803d;margin:.2rem 0">None ✓</p>';}
+    if(!flaky.length && run.flaky_count>0){
+      html+='<p class="comparison-note">'+run.flaky_count+' flaky test(s); individual test details were not saved for this run.</p>';
+    }else if(!flaky.length){html+='<p style="font-size:.8rem;color:#15803d;margin:.2rem 0">None ✓</p>';}
     else{html+='<ul class="flaky-list">';
       for(var i=0;i<flaky.length;i++){var t=flaky[i],s=clip(shortName(t.title),70);
         html+='<li title="'+esc(t.title)+'">'+esc(s)+' <strong>('+t.attempts+' attempts)</strong></li>';}
@@ -617,7 +640,7 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
 
         # Aggregate test trends picker
         _agg_top     = [[t, c] for t, c in top]
-        _agg_flaky   = [[t, c] for t, c in flaky[:10]]
+        _agg_flaky   = [[t, c] for t, c in flaky[:5]]
         _agg_slow    = [[t, d] for t, d in top_slow]
         _agg_retried = [[t, c] for t, c in most_retried]
         _agg_json    = json.dumps({"top": _agg_top, "flaky": _agg_flaky, "slow": _agg_slow, "retried": _agg_retried}).replace('</', '<\\/')

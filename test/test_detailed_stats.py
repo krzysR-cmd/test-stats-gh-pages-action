@@ -1,3 +1,4 @@
+import datetime as dt
 import json
 import os
 from pathlib import Path
@@ -76,6 +77,8 @@ class DetailedStatsTests(unittest.TestCase):
             self.assertEqual(tests[("Playwright", "suite > changes")]["previous_status"], "passed")
             self.assertEqual(tests[("Playwright", "suite > changes")]["status"], "failed")
             self.assertEqual(tests[("JUnit", "shell > check")]["change"], "changed")
+            self.assertEqual(tests[("Playwright", "suite > changes")]["duration_ms"], 0)
+            self.assertEqual(tests[("JUnit", "shell > check")]["duration_ms"], 0)
             self.assertIn('"compared_with_run_id": "1"', dashboard)
             self.assertIn("New</span>", dashboard)
             self.assertIn("&rarr; '+esc(status)", dashboard)
@@ -96,6 +99,9 @@ class DetailedStatsTests(unittest.TestCase):
                 "picker.addEventListener('change',function(){renderRun(RUNS[parseInt(this.value,10)]);});",
                 dashboard,
             )
+            self.assertIn("<th>Execution time</th>", dashboard)
+            self.assertIn("fmtTestDur(test.duration_ms)", dashboard)
+            self.assertIn("function fmtTestDur(ms)", dashboard)
 
     def test_preserves_rolling_failure_flaky_runtime_and_shell_statistics(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -136,8 +142,8 @@ class DetailedStatsTests(unittest.TestCase):
             shell_xml = root / "shell.xml"
             shell_xml.write_text(
                 '<testsuites><testsuite name="syntax">'
-                '<testcase classname="sh" name="pass"/>'
-                '<testcase classname="sh" name="fail"><failure message="shell failure"/></testcase>'
+                '<testcase classname="sh" name="pass" time="0.125"/>'
+                '<testcase classname="sh" name="fail" time="0.5"><failure message="shell failure"/></testcase>'
                 '<testcase classname="sh" name="skip"><skipped/></testcase>'
                 '</testsuite></testsuites>'
             )
@@ -160,6 +166,13 @@ class DetailedStatsTests(unittest.TestCase):
             self.assertEqual((run["total"], run["passed"], run["failed"], run["skipped"]), (5, 2, 1, 1))
             self.assertEqual((run["shell_passed"], run["shell_failed"], run["shell_skipped"]), (1, 1, 1))
             self.assertIn("failure detail", run["failed_tests"][0]["error"])
+            playwright_tests = {test["title"]: test for test in run["tests"] if test["source"] == "Playwright"}
+            self.assertEqual(playwright_tests["suite > fails"]["duration_ms"], 300)
+            self.assertEqual(playwright_tests["suite > retries"]["duration_ms"], 900)
+            junit_tests = {test["title"]: test for test in run["tests"] if test["source"] == "JUnit"}
+            self.assertEqual(junit_tests["syntax > pass"]["duration_ms"], 125)
+            self.assertEqual(junit_tests["syntax > fail"]["duration_ms"], 500)
+            self.assertEqual(junit_tests["syntax > skip"]["duration_ms"], 0)
             self.assertIn("Test trends (last 30 days)", dashboard)
             self.assertIn('"flaky": [["suite > retries", 1]]', dashboard)
             self.assertIn("else if(v==='flaky')", dashboard)
@@ -212,6 +225,147 @@ class DetailedStatsTests(unittest.TestCase):
                 '["shell-tests > scrape-csrf-extraction / current-csrf-meta-name", 1]',
                 dashboard,
             )
+
+    def test_shows_aggregate_counts_for_historical_runs_without_test_details(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            results = root / "results"
+            results.mkdir()
+            shell_xml = root / "shell.xml"
+            shell_xml.write_text('<testsuite name="current"><testcase name="passes"/></testsuite>')
+            site = root / "site"
+            stats_dir = site / "stats"
+            stats_dir.mkdir(parents=True)
+            old_timestamp = dt.datetime.now(dt.timezone.utc).isoformat().replace("+00:00", "Z")
+            legacy_run = {
+                "run_id": "371",
+                "run_url": "https://github.com/owner/repo/actions/runs/371",
+                "timestamp": old_timestamp,
+                "total": 0,
+                "passed": 0,
+                "failed": 0,
+                "skipped": 0,
+                "flaky_count": 0,
+                "shell_passed": 220,
+                "shell_failed": 1,
+                "shell_skipped": 0,
+                "shell_failed_tests": [],
+            }
+            (stats_dir / "runs.json").write_text(json.dumps({"runs": [legacy_run]}))
+            env = os.environ.copy()
+            env.update({
+                "RESULTS_DIR": str(results),
+                "SITE_DIR": str(site),
+                "SHELL_TESTS_XML": str(shell_xml),
+                "GITHUB_RUN_NUMBER": "372",
+                "GITHUB_RUN_ID": "run-372",
+                "GITHUB_SERVER_URL": "https://github.com",
+                "GITHUB_REPOSITORY": "owner/repo",
+            })
+            subprocess.run(["bash", str(SCRIPT)], check=True, env=env, capture_output=True, text=True)
+            dashboard = (stats_dir / "index.html").read_text()
+
+            self.assertIn('"shell_passed": 220', dashboard)
+            self.assertIn("counts.total=(run.total||0)+(run.shell_passed||0)", dashboard)
+            self.assertIn("counts.failed=(run.failed||0)+(run.shell_failed||0)", dashboard)
+            self.assertIn(
+                "Individual test results were not saved for this run; showing available aggregate counts.",
+                dashboard,
+            )
+            self.assertIn(
+                "run.shell_failed+' failure(s); individual test details were not saved for this run.",
+                dashboard,
+            )
+
+    def test_longest_tests_trend_shows_only_five_slowest_tests(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            results = root / "results"
+            results.mkdir()
+            test_cases = [{
+                "title": f"test-{index}",
+                "file": "tests/timing.spec.js",
+                "tests": [{
+                    "status": "expected",
+                    "results": [{"duration": index * 1000}],
+                }],
+            } for index in range(1, 7)]
+            (results / "playwright.json").write_text(json.dumps({
+                "stats": {"expected": 6, "unexpected": 0, "flaky": 0, "skipped": 0, "duration": 21000},
+                "suites": [{"title": "timing", "specs": test_cases}],
+            }))
+            shell_xml = root / "shell.xml"
+            shell_xml.write_text('<testsuite name="shell"/>')
+            site = root / "site"
+            env = os.environ.copy()
+            env.update({
+                "RESULTS_DIR": str(results),
+                "SITE_DIR": str(site),
+                "SHELL_TESTS_XML": str(shell_xml),
+                "GITHUB_RUN_NUMBER": "1",
+                "GITHUB_RUN_ID": "run-1",
+                "GITHUB_SERVER_URL": "https://github.com",
+                "GITHUB_REPOSITORY": "owner/repo",
+            })
+            subprocess.run(["bash", str(SCRIPT)], check=True, env=env, capture_output=True, text=True)
+            dashboard = (site / "stats" / "index.html").read_text()
+            payload_start = dashboard.index("var AGG=") + len("var AGG=")
+            payload_end = dashboard.index(";</script>", payload_start)
+            trends = json.loads(dashboard[payload_start:payload_end])
+
+            self.assertEqual(len(trends["slow"]), 5)
+            self.assertEqual(
+                trends["slow"],
+                [[f"timing > test-{index}", index * 1000] for index in range(6, 1, -1)],
+            )
+
+    def test_other_trend_selections_show_at_most_five_results(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            results = root / "results"
+            results.mkdir()
+            failed_specs = [{
+                "title": f"failed-{index}",
+                "file": "tests/trends.spec.js",
+                "tests": [{
+                    "status": "unexpected",
+                    "results": [{"duration": index * 1000, "errors": [{"message": "failure"}]}],
+                }],
+            } for index in range(1, 7)]
+            flaky_specs = [{
+                "title": f"flaky-{index}",
+                "file": "tests/trends.spec.js",
+                "tests": [{
+                    "status": "flaky",
+                    "results": [{"duration": index * 1000} for _ in range(index)],
+                }],
+            } for index in range(1, 7)]
+            (results / "playwright.json").write_text(json.dumps({
+                "stats": {"expected": 1, "unexpected": 6, "flaky": 6, "skipped": 0, "duration": 21000},
+                "suites": [{"title": "trends", "specs": failed_specs + flaky_specs}],
+            }))
+            shell_xml = root / "shell.xml"
+            shell_xml.write_text('<testsuite name="shell"/>')
+            site = root / "site"
+            env = os.environ.copy()
+            env.update({
+                "RESULTS_DIR": str(results),
+                "SITE_DIR": str(site),
+                "SHELL_TESTS_XML": str(shell_xml),
+                "GITHUB_RUN_NUMBER": "1",
+                "GITHUB_RUN_ID": "run-1",
+                "GITHUB_SERVER_URL": "https://github.com",
+                "GITHUB_REPOSITORY": "owner/repo",
+            })
+            subprocess.run(["bash", str(SCRIPT)], check=True, env=env, capture_output=True, text=True)
+            dashboard = (site / "stats" / "index.html").read_text()
+            payload_start = dashboard.index("var AGG=") + len("var AGG=")
+            payload_end = dashboard.index(";</script>", payload_start)
+            trends = json.loads(dashboard[payload_start:payload_end])
+
+            self.assertEqual(len(trends["top"]), 5)
+            self.assertEqual(len(trends["flaky"]), 5)
+            self.assertEqual(len(trends["retried"]), 5)
 
 
 if __name__ == "__main__":

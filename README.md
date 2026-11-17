@@ -43,10 +43,11 @@ It creates/updates:
 - `stats/runs.json` and `stats/index.html` — the detailed rolling 30-day
   per-test dashboard. It lists all tests captured by
   the selected run (the newest run by default), with a selector at the top of
-  the dashboard. It marks new tests and status changes against the previous
-  run, and includes failures from each configured result source in the Top
-  failing Test trends view. Failures seen in only some runs are included in the
-  Flaky tests trend.
+  the dashboard, including each test's execution time when the result file
+  provides it. It marks new tests and status changes against the previous run,
+  and includes failures from each configured result source in the Top failing
+  Test trends view. Failures seen in only some runs are included in the Flaky
+  tests trend.
   Detailed statistics are enabled by default and can be disabled with
   `detailed-statistics: "false"`.
 
