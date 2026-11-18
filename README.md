@@ -36,10 +36,39 @@ without a dashboard link.
 
 The action is test-runner agnostic when a runner can emit JUnit XML, a common
 interchange format supported by many test frameworks. Built-in parsers support
-JUnit XML and Playwright-format JSON (`.json`, with `stats` and `suites`
-objects); `format: auto` selects by extension. To add another native format,
-implement a parser adapter that emits the existing normalized counts and
-preserve `stats/runs.json` as the storage contract.
+JUnit XML, VSTest TRX, NUnit 2/3 XML, xUnit.net XML reports with an
+`assemblies` root, and Playwright-format JSON
+(`.json`, with `stats` and `suites` objects). `format: auto` selects JSON by
+extension and distinguishes XML formats by their root element, even when a TRX
+file has an `.xml` extension. To add another native format, implement a parser
+adapter that emits the existing normalized counts and preserve
+`stats/runs.json` as the storage contract.
+
+For example, VSTest can write a TRX report using the supplied logger command
+(the `.xml` filename is okay; the action detects the TRX contents):
+
+```yaml
+- name: Run VSTest
+  shell: pwsh
+  run: >-
+    dotnet vstest .\Ocaramba.Tests.Features\bin\Release\Ocaramba.Tests.Features.dll
+    /TestCaseFilter:"(TestCategory!=TakingScreenShots)" /Parallel
+    /ResultsDirectory:TestResults
+    /Logger:"trx;LogFileName=Ocaramba.Tests.Features.xml"
+
+- name: Collect test statistics
+  uses: raczeja/test-stats-gh-pages-action@v1
+  with:
+    result-files: TestResults/Ocaramba.Tests.Features.xml
+    format: auto
+    shell-test-results: TestResults/Ocaramba.Tests.Features.xml
+    site-directory: site
+```
+
+The report path must match where VSTest writes the logger output. `result-files`
+includes TRX counts in the action summary and run history; setting
+`shell-test-results` also adds individual tests and failures to the detailed
+dashboard.
 
 The statistics action requires Python 3 on the runner. `result-files` accepts
 newline-separated paths or glob patterns. Missing matches and malformed files
@@ -68,11 +97,12 @@ It creates/updates:
 
 For Playwright-format JSON, tests that pass after retries count as passed and
 are also exposed separately as `flaky_count` in the normalized run record.
-JUnit XML results from any runner contribute to the normalized results and
-summary. The detailed dashboard can include Playwright-format JSON and an
-optional JUnit XML reports; `shell-test-results` accepts a file path or glob pattern
-for JUnit results from any test runner. The detailed dashboard title uses the
-repository name by default; optional `report-name` text is appended to it.
+JUnit XML, VSTest TRX, NUnit 2/3 XML, and xUnit.net XML results contribute to
+the normalized results and summary. The detailed dashboard can include
+Playwright-format JSON and optional JUnit, VSTest, NUnit, or xUnit XML reports;
+`shell-test-results` accepts a file path or glob pattern for these formats.
+The detailed dashboard title uses the repository name by default; optional
+`report-name` text is appended to it.
 For example, `DBTestCompare` with `report-name: Test results` displays
 “DBTestCompare · Test results · Test Statistics.” The GitHub Actions summary
 continues to use “Test results” when `report-name` is omitted.

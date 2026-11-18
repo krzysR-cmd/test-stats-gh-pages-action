@@ -28,6 +28,74 @@ class StatsActionTests(unittest.TestCase):
         self.assertEqual(failures[0]["error"], "broken")
         self.assertEqual(flaky, [])
 
+    def test_auto_detects_vstest_trx_even_when_file_uses_xml_extension(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "Ocaramba.Tests.Features.xml"
+            path.write_text(
+                '<TestRun xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">'
+                '<Results>'
+                '<UnitTestResult testId="passed" testName="Tests.Pass" outcome="Passed" '
+                'duration="00:00:00.1250000"/>'
+                '<UnitTestResult testId="failed" testName="Tests.Fail" outcome="Failed" '
+                'duration="00:00:01.2500000"><Output><ErrorInfo><Message>broken</Message>'
+                '</ErrorInfo></Output></UnitTestResult>'
+                '<UnitTestResult testId="skipped" testName="Tests.Skip" outcome="NotExecuted" '
+                'duration="00:00:00"/></Results>'
+                '<TestDefinitions><UnitTest id="failed"><TestMethod className="Tests" '
+                'name="Fail"/></UnitTest></TestDefinitions></TestRun>'
+            )
+            counts, failures, flaky = main.parse_result(path, "auto")
+
+        self.assertEqual(
+            (counts["total"], counts["passed"], counts["failed"], counts["skipped"], counts["duration_ms"]),
+            (3, 1, 1, 1, 1375),
+        )
+        self.assertEqual(failures, [{"title": "Tests.Fail", "file": "Tests", "error": "broken"}])
+        self.assertEqual(flaky, [])
+
+    def test_auto_detects_nunit_2_nunit_3_and_xunit_xml(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            nunit3 = root / "nunit3.xml"
+            nunit3.write_text(
+                '<test-run><test-suite><test-case fullname="NUnit3.Pass" result="Passed" '
+                'duration="0.125"/><test-case fullname="NUnit3.Fail" result="Failed">'
+                '<failure><message>nunit failure</message></failure></test-case>'
+                '<test-case fullname="NUnit3.Skip" result="Skipped"/></test-suite></test-run>'
+            )
+            nunit2 = root / "nunit2.xml"
+            nunit2.write_text(
+                '<test-results><test-suite><results><test-case name="NUnit2.Pass" '
+                'success="True" executed="True" time="0.25"/><test-case name="NUnit2.Skip" '
+                'success="False" executed="False" result="Ignored"/></results></test-suite></test-results>'
+            )
+            xunit = root / "xunit.xml"
+            xunit.write_text(
+                '<assemblies><assembly name="Tests"><collection><test name="Xunit.Pass" '
+                'result="Pass" time="0.5"/><test name="Xunit.Fail" result="Fail">'
+                '<failure><message>xunit failure</message></failure></test>'
+                '<test name="Xunit.Skip" result="Skip"/></collection></assembly></assemblies>'
+            )
+
+            nunit3_counts, nunit3_failures, _ = main.parse_result(nunit3, "auto")
+            nunit2_counts, _, _ = main.parse_result(nunit2, "auto")
+            xunit_counts, xunit_failures, _ = main.parse_result(xunit, "auto")
+
+        self.assertEqual(
+            (nunit3_counts["total"], nunit3_counts["passed"], nunit3_counts["failed"], nunit3_counts["skipped"]),
+            (3, 1, 1, 1),
+        )
+        self.assertEqual(nunit3_failures[0]["error"], "nunit failure")
+        self.assertEqual(
+            (nunit2_counts["total"], nunit2_counts["passed"], nunit2_counts["skipped"]),
+            (2, 1, 1),
+        )
+        self.assertEqual(
+            (xunit_counts["total"], xunit_counts["passed"], xunit_counts["failed"], xunit_counts["skipped"]),
+            (3, 1, 1, 1),
+        )
+        self.assertEqual(xunit_failures[0]["error"], "xunit failure")
+
     def test_playwright_flaky_is_passed_and_counted_separately(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "results.json"

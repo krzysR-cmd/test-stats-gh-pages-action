@@ -82,6 +82,162 @@ def parse_junit(path):
     return counts, failures, []
 
 
+def parse_trx(path):
+    try:
+        root = ET.parse(path).getroot()
+    except (ET.ParseError, OSError) as exc:
+        fail(f"cannot parse VSTest TRX {path}: {exc}")
+    if root.tag.rsplit("}", 1)[-1] != "TestRun":
+        fail(f"VSTest TRX {path} must have a TestRun root element")
+
+    definitions = {}
+    for unit_test in root.iter():
+        if unit_test.tag.rsplit("}", 1)[-1] != "UnitTest":
+            continue
+        test_method = next(
+            (element for element in unit_test.iter()
+             if element.tag.rsplit("}", 1)[-1] == "TestMethod"),
+            None,
+        )
+        if test_method is not None:
+            definitions[unit_test.get("id", "")] = test_method.get("className", "")
+
+    counts = {"total": 0, "passed": 0, "failed": 0, "skipped": 0, "flaky": 0, "duration_ms": 0}
+    failures = []
+    passed_outcomes = {"Passed", "PassedButRunAborted"}
+    failed_outcomes = {"Failed", "Error", "Timeout", "Aborted", "NotRunnable", "Disconnected"}
+    skipped_outcomes = {"NotExecuted", "Inconclusive", "Warning"}
+
+    for result in root.iter():
+        if result.tag.rsplit("}", 1)[-1] != "UnitTestResult":
+            continue
+        counts["total"] += 1
+        duration = result.get("duration", "")
+        try:
+            hours, minutes, seconds = duration.split(":")
+            counts["duration_ms"] += round(
+                (int(hours) * 3600 + int(minutes) * 60 + float(seconds)) * 1000
+            )
+        except (ValueError, TypeError):
+            if duration:
+                fail(f"invalid VSTest duration in {path}: {duration!r}")
+
+        outcome = result.get("outcome", "")
+        if outcome in passed_outcomes:
+            counts["passed"] += 1
+        elif outcome in failed_outcomes:
+            counts["failed"] += 1
+            error = next(
+                (
+                    element.text or ""
+                    for element in result.iter()
+                    if element.tag.rsplit("}", 1)[-1] == "Message" and element.text
+                ),
+                "",
+            )
+            failures.append({
+                "title": result.get("testName", "unnamed"),
+                "file": definitions.get(result.get("testId", ""), ""),
+                "error": error[:300],
+            })
+        elif outcome in skipped_outcomes:
+            counts["skipped"] += 1
+        else:
+            fail(f"unsupported VSTest outcome in {path}: {outcome!r}")
+    return counts, failures, []
+
+
+def parse_nunit(path):
+    try:
+        root = ET.parse(path).getroot()
+    except (ET.ParseError, OSError) as exc:
+        fail(f"cannot parse NUnit XML {path}: {exc}")
+    if root.tag.rsplit("}", 1)[-1] not in ("test-run", "test-results"):
+        fail(f"NUnit XML {path} must have a test-run or test-results root element")
+
+    counts = {"total": 0, "passed": 0, "failed": 0, "skipped": 0, "flaky": 0, "duration_ms": 0}
+    failures = []
+    for case in root.iter():
+        if case.tag.rsplit("}", 1)[-1] != "test-case":
+            continue
+        counts["total"] += 1
+        try:
+            counts["duration_ms"] += round(float(case.get("duration", case.get("time", 0)) or 0) * 1000)
+        except ValueError:
+            fail(f"invalid NUnit testcase duration in {path}")
+
+        outcome = (case.get("result") or "").lower()
+        success = (case.get("success") or "").lower()
+        executed = (case.get("executed") or "").lower()
+        if outcome in ("passed", "pass", "success") or success == "true":
+            counts["passed"] += 1
+        elif outcome in ("failed", "failure", "error", "cancelled", "notrunnable", "invalid") or success == "false" and executed != "false":
+            counts["failed"] += 1
+            message = next(
+                (
+                    element.text or ""
+                    for element in case.iter()
+                    if element.tag.rsplit("}", 1)[-1] == "message" and element.text
+                ),
+                "",
+            )
+            failures.append({
+                "title": case.get("fullname") or case.get("name", "unnamed"),
+                "file": case.get("class") or case.get("classname", ""),
+                "error": message[:300],
+            })
+        elif outcome in ("skipped", "ignored", "inconclusive", "warning", "notrun", "notexecuted") or executed == "false":
+            counts["skipped"] += 1
+        else:
+            fail(f"unsupported NUnit result in {path}: {case.get('result')!r}")
+    return counts, failures, []
+
+
+def parse_xunit(path):
+    try:
+        root = ET.parse(path).getroot()
+    except (ET.ParseError, OSError) as exc:
+        fail(f"cannot parse xUnit XML {path}: {exc}")
+    if root.tag.rsplit("}", 1)[-1] != "assemblies":
+        fail(f"xUnit XML {path} must have an assemblies root element")
+
+    counts = {"total": 0, "passed": 0, "failed": 0, "skipped": 0, "flaky": 0, "duration_ms": 0}
+    failures = []
+    for assembly in root.iter():
+        if assembly.tag.rsplit("}", 1)[-1] == "assembly":
+            for case in assembly.iter():
+                if case.tag.rsplit("}", 1)[-1] != "test":
+                    continue
+                counts["total"] += 1
+                try:
+                    counts["duration_ms"] += round(float(case.get("time", 0) or 0) * 1000)
+                except ValueError:
+                    fail(f"invalid xUnit testcase duration in {path}")
+                outcome = (case.get("result") or "").lower()
+                if outcome in ("pass", "passed"):
+                    counts["passed"] += 1
+                elif outcome in ("fail", "failed", "error"):
+                    counts["failed"] += 1
+                    message = next(
+                        (
+                            element.text or ""
+                            for element in case.iter()
+                            if element.tag.rsplit("}", 1)[-1] == "message" and element.text
+                        ),
+                        "",
+                    )
+                    failures.append({
+                        "title": case.get("name", "unnamed"),
+                        "file": case.get("type", ""),
+                        "error": message[:300],
+                    })
+                elif outcome in ("skip", "skipped", "notrun"):
+                    counts["skipped"] += 1
+                else:
+                    fail(f"unsupported xUnit result in {path}: {case.get('result')!r}")
+    return counts, failures, []
+
+
 def parse_playwright(path):
     try:
         with path.open(encoding="utf-8") as source:
@@ -147,14 +303,33 @@ def parse_playwright(path):
 def parse_result(path, forced_format):
     file_format = forced_format
     if file_format == "auto":
-        file_format = "junit" if path.suffix.lower() == ".xml" else (
-            "playwright-json" if path.suffix.lower() == ".json" else ""
-        )
+        if path.suffix.lower() in (".xml", ".trx", ".nunit"):
+            try:
+                root = ET.parse(path).getroot()
+            except (ET.ParseError, OSError) as exc:
+                fail(f"cannot parse XML result {path}: {exc}")
+            root_name = root.tag.rsplit("}", 1)[-1]
+            file_format = {
+                "TestRun": "trx",
+                "test-run": "nunit",
+                "test-results": "nunit",
+                "assemblies": "xunit",
+                "testsuite": "junit",
+                "testsuites": "junit",
+            }.get(root_name, "")
+        elif path.suffix.lower() == ".json":
+            file_format = "playwright-json"
     if file_format == "junit":
         return parse_junit(path)
+    if file_format == "trx":
+        return parse_trx(path)
+    if file_format == "nunit":
+        return parse_nunit(path)
+    if file_format == "xunit":
+        return parse_xunit(path)
     if file_format == "playwright-json":
         return parse_playwright(path)
-    fail(f"cannot infer result format for {path}; set format to junit or playwright-json")
+    fail(f"cannot infer result format for {path}; set format to junit, trx, nunit, xunit, or playwright-json")
 
 
 def write_summary(name, run):
@@ -225,8 +400,8 @@ def make_dashboard(store_path, runs, name, window_days):
 
 def main():
     forced_format = env("INPUT_FORMAT", "auto")
-    if forced_format not in ("auto", "junit", "playwright-json"):
-        fail("format must be auto, junit, or playwright-json")
+    if forced_format not in ("auto", "junit", "trx", "nunit", "xunit", "playwright-json"):
+        fail("format must be auto, junit, trx, nunit, xunit, or playwright-json")
     try:
         window_days = int(env("INPUT_HISTORY_DAYS", "30"))
     except ValueError:

@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-# Reads Playwright-format JSON and optional JUnit XML test results,
+# Reads Playwright-format JSON and optional JUnit, NUnit, xUnit, or VSTest XML results,
 # updates site/stats/runs.json with a rolling 30-day window, and regenerates
 # site/stats/index.html with a failure/flakiness dashboard.
 #
@@ -12,7 +12,7 @@ set -euo pipefail
 #   GITHUB_SERVER_URL   - e.g. "https://github.com"
 #   GITHUB_REPOSITORY   - e.g. "org/repo"
 # Optional env vars:
-#   SHELL_TESTS_XML     - optional path to JUnit XML test results
+#   SHELL_TESTS_XML     - optional path to JUnit, NUnit, xUnit, or VSTest XML results
 
 RESULTS_DIR="${RESULTS_DIR:-downloaded-results}"
 SITE_DIR="${SITE_DIR:-site}"
@@ -114,7 +114,7 @@ for json_file in all_json_files:
     for suite in data.get("suites", []):
         walk_suites(suite, [], failed_tests, flaky_tests, slow_tests, all_tests)
 
-# ── Supplemental JUnit results ──────────────────────────────────────────────
+# ── Supplemental XML results ─────────────────────────────────────────────────
 
 shell_passed = 0
 shell_failed = 0
@@ -125,31 +125,119 @@ shell_xml_files = sorted(glob.glob(shell_tests_xml, recursive=True)) if shell_te
 if shell_tests_xml and not shell_xml_files and os.path.isfile(shell_tests_xml):
     shell_xml_files = [shell_tests_xml]
 if shell_tests_xml and not shell_xml_files:
-    print(f"[stats] No JUnit XML files matched {shell_tests_xml!r}", file=sys.stderr)
+    print(f"[stats] No XML test-result files matched {shell_tests_xml!r}", file=sys.stderr)
     raise SystemExit(1)
 
 if shell_xml_files:
-    try:
-        for shell_xml_file in shell_xml_files:
+    for shell_xml_file in shell_xml_files:
+        try:
             root = ET.parse(shell_xml_file).getroot()
-            suites = root.findall("testsuite") if root.tag == "testsuites" else [root]
+        except (ET.ParseError, OSError) as e:
+            print(f"[stats] Could not parse XML test results {shell_xml_file}: {e}", file=sys.stderr)
+            raise SystemExit(1)
+
+        def local_name(element):
+            return element.tag.rsplit("}", 1)[-1]
+
+        root_name = local_name(root)
+        if root_name == "TestRun":
+            source_name = "VSTest"
+            definitions = {}
+            for unit_test in root.iter():
+                if local_name(unit_test) != "UnitTest":
+                    continue
+                test_method = next(
+                    (element for element in unit_test.iter() if local_name(element) == "TestMethod"),
+                    None,
+                )
+                if test_method is not None:
+                    definitions[unit_test.get("id", "")] = test_method.get("className", "")
+
+            outcomes = {
+                "Passed": "passed",
+                "PassedButRunAborted": "passed",
+                "Failed": "failed",
+                "Error": "failed",
+                "Timeout": "failed",
+                "Aborted": "failed",
+                "NotRunnable": "failed",
+                "Disconnected": "failed",
+                "NotExecuted": "skipped",
+                "Inconclusive": "skipped",
+                "Warning": "skipped",
+            }
+            for result in root.iter():
+                if local_name(result) != "UnitTestResult":
+                    continue
+                outcome = result.get("outcome", "")
+                if outcome not in outcomes:
+                    print(f"[stats] Unsupported VSTest outcome {outcome!r} in {shell_xml_file}", file=sys.stderr)
+                    raise SystemExit(1)
+                shell_status = outcomes[outcome]
+                if shell_status == "passed":
+                    shell_passed += 1
+                elif shell_status == "failed":
+                    shell_failed += 1
+                else:
+                    shell_skipped += 1
+
+                duration = result.get("duration", "")
+                try:
+                    hours, minutes, seconds = duration.split(":")
+                    duration_ms = round(
+                        (int(hours) * 3600 + int(minutes) * 60 + float(seconds)) * 1000
+                    ) if duration else 0
+                except ValueError:
+                    print(f"[stats] Invalid VSTest duration {duration!r} in {shell_xml_file}", file=sys.stderr)
+                    raise SystemExit(1)
+
+                test_title = result.get("testName", "unnamed")
+                test_file = definitions.get(result.get("testId", ""), "")
+                if shell_status == "failed":
+                    message = next(
+                        (
+                            element.text or ""
+                            for element in result.iter()
+                            if local_name(element) == "Message" and element.text
+                        ),
+                        "",
+                    )
+                    shell_failed_tests.append({
+                        "title": test_title,
+                        "file": test_file,
+                        "error": strip_ansi(message)[:300],
+                    })
+                all_tests.append({
+                    "source": source_name,
+                    "title": test_title,
+                    "file": test_file,
+                    "duration_ms": duration_ms,
+                    "status": shell_status,
+                })
+                if duration_ms > 0:
+                    slow_tests.append({"title": test_title, "duration_ms": duration_ms})
+        elif root_name in ("testsuite", "testsuites"):
+            source_name = "JUnit"
+            suites = [element for element in root.iter() if local_name(element) == "testsuite"]
             for suite in suites:
                 suite_name = suite.get("name", "")
-                for tc in suite.findall("testcase"):
+                for tc in (element for element in suite if local_name(element) == "testcase"):
                     duration_ms = round(float(tc.get("time", 0) or 0) * 1000)
-                    if tc.find("skipped") is not None:
+                    child_names = {local_name(element) for element in tc}
+                    if "skipped" in child_names:
                         shell_skipped += 1
                         shell_status = "skipped"
-                    elif tc.find("failure") is not None or tc.find("error") is not None:
+                    elif "failure" in child_names or "error" in child_names:
                         shell_failed += 1
                         shell_status = "failed"
-                        elem = tc.find("failure")
-                        if elem is None:
-                            elem = tc.find("error")
+                        elem = next(
+                            element for element in tc
+                            if local_name(element) in ("failure", "error")
+                        )
                         msg = strip_ansi(elem.get("message", "") or elem.text or "")[:300]
                         shell_failed_tests.append({
                             "title": f"{suite_name} > {tc.get('name', '?')}",
-                            "file":  tc.get("classname", ""),
+                            "file": tc.get("classname", ""),
                             "error": msg,
                         })
                     else:
@@ -157,7 +245,7 @@ if shell_xml_files:
                         shell_status = "passed"
                     shell_title = f"{suite_name} > {tc.get('name', '?')}"
                     all_tests.append({
-                        "source": "JUnit",
+                        "source": source_name,
                         "title": shell_title,
                         "file": tc.get("classname", ""),
                         "duration_ms": duration_ms,
@@ -165,15 +253,130 @@ if shell_xml_files:
                     })
                     if duration_ms > 0:
                         slow_tests.append({"title": shell_title, "duration_ms": duration_ms})
-        print(f"[stats] JUnit tests: passed={shell_passed} failed={shell_failed} skipped={shell_skipped}")
-        if shell_failed_tests:
-            print(f"[stats] JUnit test failures ({len(shell_failed_tests)}):")
-            for t in shell_failed_tests:
-                print(f"    - {t['title']}")
-    except Exception as e:
-        print(f"[stats] Could not parse JUnit XML {shell_tests_xml}: {e}", file=sys.stderr)
+        elif root_name in ("test-run", "test-results"):
+            source_name = "NUnit"
+            for case in root.iter():
+                if local_name(case) != "test-case":
+                    continue
+                outcome = (case.get("result") or "").lower()
+                success = (case.get("success") or "").lower()
+                executed = (case.get("executed") or "").lower()
+                if outcome in ("passed", "pass", "success") or success == "true":
+                    shell_status = "passed"
+                elif outcome in ("failed", "failure", "error", "cancelled", "notrunnable", "invalid") or (
+                    success == "false" and executed != "false"
+                ):
+                    shell_status = "failed"
+                elif outcome in (
+                    "skipped", "ignored", "inconclusive", "warning", "notrun", "notexecuted"
+                ) or executed == "false":
+                    shell_status = "skipped"
+                else:
+                    print(f"[stats] Unsupported NUnit result {case.get('result')!r} in {shell_xml_file}", file=sys.stderr)
+                    raise SystemExit(1)
+                if shell_status == "passed":
+                    shell_passed += 1
+                elif shell_status == "failed":
+                    shell_failed += 1
+                else:
+                    shell_skipped += 1
+                try:
+                    duration_ms = round(
+                        float(case.get("duration", case.get("time", 0)) or 0) * 1000
+                    )
+                except ValueError:
+                    print(f"[stats] Invalid NUnit duration in {shell_xml_file}", file=sys.stderr)
+                    raise SystemExit(1)
+                test_title = case.get("fullname") or case.get("name", "unnamed")
+                test_file = case.get("class") or case.get("classname", "")
+                if shell_status == "failed":
+                    message = next(
+                        (
+                            element.text or ""
+                            for element in case.iter()
+                            if local_name(element) == "message" and element.text
+                        ),
+                        "",
+                    )
+                    shell_failed_tests.append({
+                        "title": test_title,
+                        "file": test_file,
+                        "error": strip_ansi(message)[:300],
+                    })
+                all_tests.append({
+                    "source": source_name,
+                    "title": test_title,
+                    "file": test_file,
+                    "duration_ms": duration_ms,
+                    "status": shell_status,
+                })
+                if duration_ms > 0:
+                    slow_tests.append({"title": test_title, "duration_ms": duration_ms})
+        elif root_name == "assemblies":
+            source_name = "xUnit"
+            for assembly in root.iter():
+                if local_name(assembly) != "assembly":
+                    continue
+                for case in assembly.iter():
+                    if local_name(case) != "test":
+                        continue
+                    outcome = (case.get("result") or "").lower()
+                    if outcome in ("pass", "passed"):
+                        shell_status = "passed"
+                    elif outcome in ("fail", "failed", "error"):
+                        shell_status = "failed"
+                    elif outcome in ("skip", "skipped", "notrun"):
+                        shell_status = "skipped"
+                    else:
+                        print(f"[stats] Unsupported xUnit result {case.get('result')!r} in {shell_xml_file}", file=sys.stderr)
+                        raise SystemExit(1)
+                    if shell_status == "passed":
+                        shell_passed += 1
+                    elif shell_status == "failed":
+                        shell_failed += 1
+                    else:
+                        shell_skipped += 1
+                    try:
+                        duration_ms = round(float(case.get("time", 0) or 0) * 1000)
+                    except ValueError:
+                        print(f"[stats] Invalid xUnit duration in {shell_xml_file}", file=sys.stderr)
+                        raise SystemExit(1)
+                    test_title = case.get("name", "unnamed")
+                    test_file = case.get("type", "")
+                    if shell_status == "failed":
+                        message = next(
+                            (
+                                element.text or ""
+                                for element in case.iter()
+                                if local_name(element) == "message" and element.text
+                            ),
+                            "",
+                        )
+                        shell_failed_tests.append({
+                            "title": test_title,
+                            "file": test_file,
+                            "error": strip_ansi(message)[:300],
+                        })
+                    all_tests.append({
+                        "source": source_name,
+                        "title": test_title,
+                        "file": test_file,
+                        "duration_ms": duration_ms,
+                        "status": shell_status,
+                    })
+                    if duration_ms > 0:
+                        slow_tests.append({"title": test_title, "duration_ms": duration_ms})
+        else:
+            print(f"[stats] Unsupported XML test-result root {root_name!r} in {shell_xml_file}", file=sys.stderr)
+            raise SystemExit(1)
+
+    print(f"[stats] Additional tests: passed={shell_passed} failed={shell_failed} skipped={shell_skipped}")
+    if shell_failed_tests:
+        print(f"[stats] Additional test failures ({len(shell_failed_tests)}):")
+        for t in shell_failed_tests:
+            print(f"    - {t['title']}")
 else:
-    print(f"[stats] No supplemental JUnit XML provided — skipping")
+    print(f"[stats] No supplemental XML test results provided — skipping")
 
 run_entry = {
     "run_id":              run_number,
@@ -356,7 +559,7 @@ shell_avg_passed    = int(round(shell_total_passed / max(1, len(eligible))))
 shell_avg_failed    = int(round(shell_total_failed / max(1, len(eligible))))
 shell_avg_total     = int(round((shell_total_passed + shell_total_failed + shell_total_skipped) / max(1, len(eligible))))
 
-# Top JUnit test failures across runs
+# Top additional test failures across runs
 shell_fail_counts = {}
 for run in eligible:
     for t in run.get("shell_failed_tests", []):
@@ -518,7 +721,7 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
         change='<span class="change-badge change-updated">'+esc(test.previous_status||'unknown')+' &rarr; '+esc(status)+'</span>';
       }
       rows+='<tr data-test-title="'+esc(title)+'"><td title="'+esc(title)+'">'+esc(clip(shortName(title),90))+'</td>'
-        +'<td>'+esc(test.source==='JUnit'?'Additional':test.source||'')+'</td><td><span class="status-badge '+statusClass+'">'+esc(status)+'</span></td>'
+        +'<td>'+esc(['JUnit','NUnit','xUnit','VSTest'].includes(test.source)?'Additional':test.source||'')+'</td><td><span class="status-badge '+statusClass+'">'+esc(status)+'</span></td>'
         +'<td>'+fmtTestDur(test.duration_ms)+'</td><td>'+change+'</td></tr>';
     }
     document.getElementById('all-tests-body').innerHTML=rows;
@@ -769,7 +972,7 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
 </script>
 ''')
 
-        # JUnit results section
+        # Additional test results section
         fh.write('<div class="section-lbl">Additional test results</div>\n')
         fh.write('<div class="stats-row" style="margin-bottom:.5rem">\n')
         fh.write(f'<div class="stat-box"><div class="stat-val">{shell_avg_total}</div><div class="stat-lbl">Avg tests/run</div></div>\n')

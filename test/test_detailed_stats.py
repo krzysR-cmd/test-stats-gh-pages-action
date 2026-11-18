@@ -11,6 +11,112 @@ SCRIPT = Path(__file__).parents[1] / "src" / "update-stats.sh"
 
 
 class DetailedStatsTests(unittest.TestCase):
+    def test_reads_vstest_trx_as_supplemental_test_results(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            results = root / "results"
+            results.mkdir()
+            trx = root / "Ocaramba.Tests.Features.xml"
+            trx.write_text(
+                '<TestRun xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">'
+                '<Results>'
+                '<UnitTestResult testId="passed" testName="Tests.Pass" outcome="Passed" '
+                'duration="00:00:00.1250000"/>'
+                '<UnitTestResult testId="failed" testName="Tests.Fail" outcome="Failed" '
+                'duration="00:00:01.2500000"><Output><ErrorInfo><Message>broken</Message>'
+                '</ErrorInfo></Output></UnitTestResult>'
+                '<UnitTestResult testId="skipped" testName="Tests.Skip" outcome="NotExecuted" '
+                'duration="00:00:00"/></Results>'
+                '<TestDefinitions><UnitTest id="failed"><TestMethod className="Tests" '
+                'name="Fail"/></UnitTest></TestDefinitions></TestRun>'
+            )
+            site = root / "site"
+            env = os.environ.copy()
+            env.update({
+                "RESULTS_DIR": str(results),
+                "SITE_DIR": str(site),
+                "SHELL_TESTS_XML": str(trx),
+                "GITHUB_RUN_NUMBER": "8",
+                "GITHUB_RUN_ID": "run-8",
+                "GITHUB_SERVER_URL": "https://github.com",
+                "GITHUB_REPOSITORY": "owner/repo",
+            })
+
+            subprocess.run(
+                ["bash", str(SCRIPT)],
+                check=True,
+                cwd=root,
+                env=env,
+                capture_output=True,
+                text=True,
+            )
+
+            run = json.loads((site / "stats" / "runs.json").read_text())["runs"][0]
+            tests = {test["title"]: test for test in run["tests"]}
+            self.assertEqual(
+                (run["shell_passed"], run["shell_failed"], run["shell_skipped"]),
+                (1, 1, 1),
+            )
+            self.assertEqual(tests["Tests.Pass"]["source"], "VSTest")
+            self.assertEqual(tests["Tests.Pass"]["duration_ms"], 125)
+            self.assertEqual(run["shell_failed_tests"][0]["error"], "broken")
+
+    def test_reads_nunit_and_xunit_xml_as_supplemental_results(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            results = root / "results"
+            results.mkdir()
+            (root / "nunit3.xml").write_text(
+                '<test-run><test-case fullname="NUnit3.Pass" result="Passed" duration="0.125"/>'
+                '<test-case fullname="NUnit3.Fail" result="Failed"><failure><message>nunit failure'
+                '</message></failure></test-case><test-case fullname="NUnit3.Skip" result="Skipped"/>'
+                '</test-run>'
+            )
+            (root / "nunit2.xml").write_text(
+                '<test-results><test-suite><results><test-case name="NUnit2.Pass" '
+                'success="True" executed="True" time="0.25"/><test-case name="NUnit2.Skip" '
+                'success="False" executed="False" result="Ignored"/></results></test-suite></test-results>'
+            )
+            (root / "xunit.xml").write_text(
+                '<assemblies><assembly name="Tests"><collection><test name="Xunit.Pass" '
+                'result="Pass" time="0.5"/><test name="Xunit.Fail" result="Fail">'
+                '<failure><message>xunit failure</message></failure></test>'
+                '<test name="Xunit.Skip" result="Skip"/></collection></assembly></assemblies>'
+            )
+            site = root / "site"
+            env = os.environ.copy()
+            env.update({
+                "RESULTS_DIR": str(results),
+                "SITE_DIR": str(site),
+                "SHELL_TESTS_XML": str(root / "*.xml"),
+                "GITHUB_RUN_NUMBER": "9",
+                "GITHUB_RUN_ID": "run-9",
+                "GITHUB_SERVER_URL": "https://github.com",
+                "GITHUB_REPOSITORY": "owner/repo",
+            })
+
+            subprocess.run(
+                ["bash", str(SCRIPT)],
+                check=True,
+                cwd=root,
+                env=env,
+                capture_output=True,
+                text=True,
+            )
+
+            run = json.loads((site / "stats" / "runs.json").read_text())["runs"][0]
+            tests = {test["title"]: test for test in run["tests"]}
+            self.assertEqual(
+                (run["shell_passed"], run["shell_failed"], run["shell_skipped"]),
+                (3, 2, 3),
+            )
+            self.assertEqual(tests["NUnit3.Pass"]["source"], "NUnit")
+            self.assertEqual(tests["Xunit.Pass"]["source"], "xUnit")
+            self.assertEqual(
+                {test["error"] for test in run["shell_failed_tests"]},
+                {"nunit failure", "xunit failure"},
+            )
+
     def test_expands_junit_glob_and_uses_report_name_in_dashboard_title(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -133,7 +239,7 @@ class DetailedStatsTests(unittest.TestCase):
             )
 
             self.assertNotEqual(result.returncode, 0)
-            self.assertIn("No JUnit XML files matched", result.stderr)
+            self.assertIn("No XML test-result files matched", result.stderr)
 
     def test_lists_all_tests_and_marks_new_or_changed_statuses(self):
         with tempfile.TemporaryDirectory() as tmp:

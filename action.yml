@@ -5,7 +5,7 @@ inputs:
     description: Newline-separated result file paths or glob patterns.
     required: true
   format:
-    description: Result format (auto, junit, or playwright-json).
+    description: Result format (auto, junit, trx, nunit, xunit, or playwright-json).
     required: false
     default: auto
   site-directory:
@@ -37,7 +37,7 @@ inputs:
     required: false
     default: downloaded-results
   shell-test-results:
-    description: Optional JUnit XML file path or glob pattern from any test runner for the detailed dashboard.
+    description: Optional JUnit, NUnit, xUnit, or VSTest XML result file path or glob pattern for the detailed dashboard.
     required: false
     default: ""
 outputs:
