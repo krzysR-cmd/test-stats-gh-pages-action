@@ -611,6 +611,8 @@ td:last-child{{text-align:right;font-weight:700;color:#dc2626;white-space:nowrap
 .flaky-list li{{margin:.2rem 0}}
 .flaky-list strong{{color:#d97706}}
 .all-tests td:last-child{{text-align:left;font-weight:400;color:#374151;white-space:normal}}
+.all-tests th button{{border:0;background:transparent;color:inherit;font:inherit;letter-spacing:inherit;text-transform:inherit;padding:0;cursor:pointer}}
+.all-tests th button:hover{{color:#475569}}
 .comparison-note{{font-size:.78rem;color:#64748b;margin:.25rem 0 .5rem}}
 .status-badge,.change-badge{{display:inline-block;border-radius:999px;padding:.1rem .45rem;font-size:.7rem;font-weight:700;white-space:nowrap}}
 .status-passed{{background:#dcfce7;color:#15803d}}
@@ -688,11 +690,63 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
   var testsPerPage=30;
   var currentPage=0;
   var currentTests=[];
+  var sortColumn='priority';
+  var sortDirection=1;
   function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
   function fmtDur(ms){if(!ms)return '&mdash;';if(ms<1000)return Math.round(ms)+' ms';var s=ms/1000;if(s<60)return s.toFixed(0)+'s';return Math.floor(s/60)+'m '+Math.floor(s%60)+'s';}
   function fmtTestDur(ms){if(typeof ms!=='number'||ms<=0)return '&mdash;';if(ms<1000)return Math.round(ms)+' ms';if(ms<60000)return (ms/1000).toFixed(2)+' s';var s=ms/1000;return Math.floor(s/60)+'m '+(s%60).toFixed(1)+'s';}
   function shortName(t){var p=t.split('>').map(function(x){return x.trim();}).filter(Boolean);return p.length>=2?p.slice(-2).join(' › '):(p[p.length-1]||t);}
   function clip(s,n){return s.length>n?s.slice(-n):s;}
+  function statusRank(status){
+    var ranks={failed:0,flaky:1,passed:2,skipped:3};
+    return Object.prototype.hasOwnProperty.call(ranks,status)?ranks[status]:4;
+  }
+  function changeRank(test){
+    return test.change==='new'?0:(test.change==='changed'?1:2);
+  }
+  function compareTestValues(a,b,column){
+    var left,right;
+    if(column==='priority'){
+      left=statusRank(a.status||'unknown');
+      right=statusRank(b.status||'unknown');
+      if(left!==right){return left-right;}
+      left=changeRank(a);
+      right=changeRank(b);
+      if(left!==right){return left-right;}
+      return (a.title||'').localeCompare(b.title||'');
+    }
+    if(column==='title'){
+      left=a.title||'';
+      right=b.title||'';
+    }else if(column==='source'){
+      left=['JUnit','NUnit','xUnit','VSTest'].includes(a.source)?'Additional':(a.source||'');
+      right=['JUnit','NUnit','xUnit','VSTest'].includes(b.source)?'Additional':(b.source||'');
+    }else if(column==='status'){
+      left=statusRank(a.status||'unknown');
+      right=statusRank(b.status||'unknown');
+    }else if(column==='duration'){
+      left=Number(a.duration_ms)||0;
+      right=Number(b.duration_ms)||0;
+    }else{
+      left=changeRank(a);
+      right=changeRank(b);
+    }
+    if(left<right){return -sortDirection;}
+    if(left>right){return sortDirection;}
+    return (a.title||'').localeCompare(b.title||'');
+  }
+  function updateSortHeaders(){
+    var headers=document.querySelectorAll('.all-tests th');
+    for(var i=0;i<headers.length;i++){
+      var button=headers[i].querySelector('button');
+      var column=button.getAttribute('data-sort');
+      var label=button.getAttribute('data-label');
+      var active=column===sortColumn;
+      button.textContent=label+(active?(sortDirection===1?' ↑':' ↓'):'');
+      button.setAttribute('aria-label','Sort by '+label+(active?(sortDirection===1?' ascending':' descending'):''));
+      headers[i].setAttribute('aria-sort',active?(sortDirection===1?'ascending':'descending'):'none');
+    }
+  }
   function renderTestPage(){
     var pageCount=Math.max(1,Math.ceil(currentTests.length/testsPerPage));
     currentPage=Math.min(Math.max(0,currentPage),pageCount-1);
@@ -720,7 +774,7 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
   }
   function renderTests(run){
     var tests=run.tests||[];
-    currentTests=tests;
+    currentTests=tests.slice().sort(function(a,b){return compareTestValues(a,b,sortColumn);});
     currentPage=0;
     var counts={total:0,passed:0,failed:0,flaky:0,skipped:0};
     if(tests.length){
@@ -760,8 +814,27 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
       +'<button type="button" id="test-page-next" aria-label="Next test page">Next</button>'
       +'<label for="test-page-size">Tests per page</label><select id="test-page-size" aria-label="Tests per page">'
       +'<option value="30" selected>30</option><option value="50">50</option><option value="100">100</option></select></div>'
-      +'<div class="table-scroll"><table class="all-tests"><thead><tr><th>Test</th><th>Source</th><th>Status</th><th>Execution time</th><th>Change</th></tr></thead><tbody id="all-tests-body"></tbody></table></div>';
+      +'<div class="table-scroll"><table class="all-tests"><thead><tr>'
+      +'<th aria-sort="none"><button type="button" data-sort="title" data-label="Test" aria-label="Sort by Test">Test</button></th>'
+      +'<th aria-sort="none"><button type="button" data-sort="source" data-label="Source" aria-label="Sort by Source">Source</button></th>'
+      +'<th aria-sort="none"><button type="button" data-sort="status" data-label="Status" aria-label="Sort by Status">Status</button></th>'
+      +'<th aria-sort="none"><button type="button" data-sort="duration" data-label="Execution time" aria-label="Sort by Execution time">Execution time</button></th>'
+      +'<th aria-sort="none"><button type="button" data-sort="change" data-label="Change" aria-label="Sort by Change">Change</button></th>'
+      +'</tr></thead><tbody id="all-tests-body"></tbody></table></div>';
     testsBox.innerHTML=html;
+    var sortButtons=testsBox.querySelectorAll('.all-tests th button');
+    for(var i=0;i<sortButtons.length;i++){
+      sortButtons[i].addEventListener('click',function(){
+        var column=this.getAttribute('data-sort');
+        sortDirection=column===sortColumn?-sortDirection:1;
+        sortColumn=column;
+        currentTests.sort(function(a,b){return compareTestValues(a,b,sortColumn);});
+        currentPage=0;
+        updateSortHeaders();
+        renderTestPage();
+      });
+    }
+    updateSortHeaders();
     document.getElementById('test-page-prev').addEventListener('click',function(){currentPage--;renderTestPage();});
     document.getElementById('test-page-next').addEventListener('click',function(){currentPage++;renderTestPage();});
     document.getElementById('test-page-size').addEventListener('change',function(){

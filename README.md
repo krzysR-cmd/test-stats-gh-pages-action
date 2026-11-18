@@ -86,7 +86,10 @@ It creates/updates:
   per-test dashboard. It lists all tests captured by
   the selected run (the newest run by default), with a selector at the top of
   the dashboard, including each test's execution time when the result file
-  provides it. The test table is paginated with 30 tests per page by default,
+  provides it. The Test, Source, Status, Execution time, and Change columns can be
+  sorted by clicking their headers. The default order puts failed tests first,
+  then flaky tests, then new and changed tests, with test name as the tie-breaker.
+  The test table is paginated with 30 tests per page by default,
   selectable sizes of 30, 50, or 100, Prev/Next controls, a displayed range,
   and a page count. It marks new tests and status changes against the previous run,
   and includes failures from each configured result source in the Top failing

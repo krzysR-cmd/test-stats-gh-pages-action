@@ -339,7 +339,7 @@ class DetailedStatsTests(unittest.TestCase):
                 "picker.addEventListener('change',function(){renderRun(RUNS[parseInt(this.value,10)]);});",
                 dashboard,
             )
-            self.assertIn("<th>Execution time</th>", dashboard)
+            self.assertIn('data-label="Execution time"', dashboard)
             self.assertIn("fmtTestDur(test.duration_ms)", dashboard)
             self.assertIn("function fmtTestDur(ms)", dashboard)
 
@@ -474,6 +474,16 @@ class DetailedStatsTests(unittest.TestCase):
             self.assertIn("testsPerPage=parseInt(this.value,10)", dashboard)
             self.assertIn("var start=currentPage*testsPerPage,end=Math.min(start+testsPerPage,currentTests.length)", dashboard)
             self.assertIn('"title": "pagination > test-64"', dashboard)
+            self.assertIn("var sortColumn='priority';", dashboard)
+            self.assertIn("var ranks={failed:0,flaky:1,passed:2,skipped:3};", dashboard)
+            self.assertIn("return test.change==='new'?0:(test.change==='changed'?1:2);", dashboard)
+            self.assertIn("currentTests=tests.slice().sort", dashboard)
+            self.assertIn("data-sort=\"title\"", dashboard)
+            self.assertIn("data-sort=\"source\"", dashboard)
+            self.assertIn("data-sort=\"status\"", dashboard)
+            self.assertIn("data-sort=\"duration\"", dashboard)
+            self.assertIn("data-sort=\"change\"", dashboard)
+            self.assertIn("sortDirection=column===sortColumn?-sortDirection:1;", dashboard)
 
     def test_records_shell_failure_when_playwright_results_are_unavailable(self):
         with tempfile.TemporaryDirectory() as tmp:
