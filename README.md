@@ -68,8 +68,9 @@ For Playwright-format JSON, tests that pass after retries count as passed and
 are also exposed separately as `flaky_count` in the normalized run record.
 JUnit XML results from any runner contribute to the normalized results and
 summary. The detailed dashboard can include Playwright-format JSON and an
-optional JUnit XML report; the `shell-test-results` input name is retained for
-compatibility, but it accepts JUnit results from any test runner.
+optional JUnit XML reports; `shell-test-results` accepts a file path or glob pattern
+for JUnit results from any test runner. The `report-name` input also labels
+the detailed dashboard title.
 
 ## Permissions and deployment
 

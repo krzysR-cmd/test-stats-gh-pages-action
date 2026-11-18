@@ -31,6 +31,7 @@ def strip_ansi(s):
 results_dir     = os.environ.get("RESULTS_DIR", "downloaded-results")
 site_dir        = os.environ.get("SITE_DIR", "site")
 shell_tests_xml = os.environ.get("SHELL_TESTS_XML", "")
+report_name     = os.environ.get("REPORT_NAME", "Test results")
 run_number      = os.environ.get("GITHUB_RUN_NUMBER", "0")
 run_url         = "{}/{}/actions/runs/{}".format(
     os.environ.get("GITHUB_SERVER_URL", "https://github.com"),
@@ -117,42 +118,50 @@ shell_failed = 0
 shell_skipped = 0
 shell_failed_tests = []
 
-if shell_tests_xml and os.path.exists(shell_tests_xml):
+shell_xml_files = sorted(glob.glob(shell_tests_xml, recursive=True)) if shell_tests_xml else []
+if shell_tests_xml and not shell_xml_files and os.path.isfile(shell_tests_xml):
+    shell_xml_files = [shell_tests_xml]
+if shell_tests_xml and not shell_xml_files:
+    print(f"[stats] No JUnit XML files matched {shell_tests_xml!r}", file=sys.stderr)
+    raise SystemExit(1)
+
+if shell_xml_files:
     try:
-        root = ET.parse(shell_tests_xml).getroot()
-        suites = root.findall("testsuite") if root.tag == "testsuites" else [root]
-        for suite in suites:
-            suite_name = suite.get("name", "")
-            for tc in suite.findall("testcase"):
-                duration_ms = round(float(tc.get("time", 0) or 0) * 1000)
-                if tc.find("skipped") is not None:
-                    shell_skipped += 1
-                    shell_status = "skipped"
-                elif tc.find("failure") is not None or tc.find("error") is not None:
-                    shell_failed += 1
-                    shell_status = "failed"
-                    elem = tc.find("failure")
-                    if elem is None:
-                        elem = tc.find("error")
-                    msg = strip_ansi(elem.get("message", "") or elem.text or "")[:300]
-                    shell_failed_tests.append({
-                        "title": f"{suite_name} > {tc.get('name', '?')}",
-                        "file":  tc.get("classname", ""),
-                        "error": msg,
+        for shell_xml_file in shell_xml_files:
+            root = ET.parse(shell_xml_file).getroot()
+            suites = root.findall("testsuite") if root.tag == "testsuites" else [root]
+            for suite in suites:
+                suite_name = suite.get("name", "")
+                for tc in suite.findall("testcase"):
+                    duration_ms = round(float(tc.get("time", 0) or 0) * 1000)
+                    if tc.find("skipped") is not None:
+                        shell_skipped += 1
+                        shell_status = "skipped"
+                    elif tc.find("failure") is not None or tc.find("error") is not None:
+                        shell_failed += 1
+                        shell_status = "failed"
+                        elem = tc.find("failure")
+                        if elem is None:
+                            elem = tc.find("error")
+                        msg = strip_ansi(elem.get("message", "") or elem.text or "")[:300]
+                        shell_failed_tests.append({
+                            "title": f"{suite_name} > {tc.get('name', '?')}",
+                            "file":  tc.get("classname", ""),
+                            "error": msg,
+                        })
+                    else:
+                        shell_passed += 1
+                        shell_status = "passed"
+                    shell_title = f"{suite_name} > {tc.get('name', '?')}"
+                    all_tests.append({
+                        "source": "JUnit",
+                        "title": shell_title,
+                        "file": tc.get("classname", ""),
+                        "duration_ms": duration_ms,
+                        "status": shell_status,
                     })
-                else:
-                    shell_passed += 1
-                    shell_status = "passed"
-                shell_title = f"{suite_name} > {tc.get('name', '?')}"
-                all_tests.append({
-                    "source": "JUnit",
-                    "title": shell_title,
-                    "file": tc.get("classname", ""),
-                    "duration_ms": duration_ms,
-                    "status": shell_status,
-                })
-                if duration_ms > 0:
-                    slow_tests.append({"title": shell_title, "duration_ms": duration_ms})
+                    if duration_ms > 0:
+                        slow_tests.append({"title": shell_title, "duration_ms": duration_ms})
         print(f"[stats] JUnit tests: passed={shell_passed} failed={shell_failed} skipped={shell_skipped}")
         if shell_failed_tests:
             print(f"[stats] JUnit test failures ({len(shell_failed_tests)}):")
@@ -363,7 +372,7 @@ with open(dashboard, "w") as fh:
     fh.write(f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Test Statistics — StatsServiceBook</title>
+<title>{esc(report_name)} — Test Statistics</title>
 <style>
 *{{box-sizing:border-box}}
 body{{font-family:system-ui,-apple-system,Arial,sans-serif;margin:0;background:#f0f2f5;color:#1a1a2e;min-height:100vh}}
@@ -438,7 +447,7 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
 </style>
 </head><body>
 <div class="topbar">
-  <span class="topbar-title">StatsServiceBook &middot; Test Statistics</span>
+  <span class="topbar-title">{esc(report_name)} &middot; Test Statistics</span>
   <a href="../">&larr; All reports</a>
   <span class="topbar-meta">Last 30 days &middot; Updated {esc(updated_label)}</span>
 </div>

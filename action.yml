@@ -21,7 +21,7 @@ inputs:
     required: false
     default: reusable-stats
   report-name:
-    description: Label used in the GitHub Actions summary.
+    description: Label used in the GitHub Actions summary and detailed dashboard title.
     required: false
     default: Test results
   dashboard-url:
@@ -37,7 +37,7 @@ inputs:
     required: false
     default: downloaded-results
   shell-test-results:
-    description: Optional JUnit XML file from any test runner for the detailed dashboard.
+    description: Optional JUnit XML file path or glob pattern from any test runner for the detailed dashboard.
     required: false
     default: ""
 outputs:
@@ -77,6 +77,7 @@ runs:
       env:
         RESULTS_DIR: ${{ inputs.playwright-results-directory }}
         SITE_DIR: ${{ inputs.site-directory }}
+        REPORT_NAME: ${{ inputs.report-name }}
         SHELL_TESTS_XML: ${{ inputs.shell-test-results }}
         GITHUB_RUN_NUMBER: ${{ github.run_number }}
         GITHUB_RUN_ID: ${{ github.run_id }}

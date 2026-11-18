@@ -11,6 +11,88 @@ SCRIPT = Path(__file__).parents[1] / "src" / "update-stats.sh"
 
 
 class DetailedStatsTests(unittest.TestCase):
+    def test_expands_junit_glob_and_uses_report_name_in_dashboard_title(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for directory, name, cases in (
+                (
+                    "module-a",
+                    "TEST-passing.xml",
+                    "".join(f'<testcase name="pass-{index}"/>' for index in range(20)),
+                ),
+                (
+                    "module-b",
+                    "TEST-mixed.xml",
+                    "".join(
+                        f'<testcase name="fail-{index}"><failure message="failed"/></testcase>'
+                        for index in range(9)
+                    )
+                    + '<testcase name="skipped"><skipped/></testcase>',
+                ),
+            ):
+                junit_dir = root / "test-results" / directory / "junitreports"
+                junit_dir.mkdir(parents=True)
+                (junit_dir / name).write_text(f'<testsuite name="{directory}">{cases}</testsuite>')
+            site = root / "site"
+            env = os.environ.copy()
+            env.update({
+                "SITE_DIR": str(site),
+                "SHELL_TESTS_XML": "test-results/**/TEST-*.xml",
+                "REPORT_NAME": "DBTestCompare & tests",
+                "GITHUB_RUN_NUMBER": "201",
+                "GITHUB_RUN_ID": "run-201",
+                "GITHUB_SERVER_URL": "https://github.com",
+                "GITHUB_REPOSITORY": "owner/repo",
+            })
+            subprocess.run(
+                ["bash", str(SCRIPT)],
+                check=True,
+                cwd=root,
+                env=env,
+                capture_output=True,
+                text=True,
+            )
+
+            run = json.loads((site / "stats" / "runs.json").read_text())["runs"][0]
+            dashboard = (site / "stats" / "index.html").read_text()
+
+            self.assertEqual(
+                (run["shell_passed"], run["shell_failed"], run["shell_skipped"]),
+                (20, 9, 1),
+            )
+            self.assertEqual(len(run["tests"]), 30)
+            self.assertEqual(len(run["shell_failed_tests"]), 9)
+            self.assertIn("<title>DBTestCompare &amp; tests — Test Statistics</title>", dashboard)
+            self.assertIn(
+                "DBTestCompare &amp; tests &middot; Test Statistics",
+                dashboard,
+            )
+
+    def test_fails_when_configured_junit_glob_matches_no_files(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            site = root / "site"
+            env = os.environ.copy()
+            env.update({
+                "SITE_DIR": str(site),
+                "SHELL_TESTS_XML": "test-results/**/TEST-*.xml",
+                "GITHUB_RUN_NUMBER": "201",
+                "GITHUB_RUN_ID": "run-201",
+                "GITHUB_SERVER_URL": "https://github.com",
+                "GITHUB_REPOSITORY": "owner/repo",
+            })
+
+            result = subprocess.run(
+                ["bash", str(SCRIPT)],
+                cwd=root,
+                env=env,
+                capture_output=True,
+                text=True,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("No JUnit XML files matched", result.stderr)
+
     def test_lists_all_tests_and_marks_new_or_changed_statuses(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
