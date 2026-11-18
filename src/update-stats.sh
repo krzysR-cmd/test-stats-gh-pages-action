@@ -552,21 +552,6 @@ for _r in eligible:
         retry_by_test[k] = max(retry_by_test.get(k, 0), _t.get("attempts", 1))
 most_retried = sorted(retry_by_test.items(), key=lambda x: -x[1])[:5]
 
-shell_total_passed  = sum(r.get("shell_passed", 0) for r in eligible)
-shell_total_failed  = sum(r.get("shell_failed", 0) for r in eligible)
-shell_total_skipped = sum(r.get("shell_skipped", 0) for r in eligible)
-shell_avg_passed    = int(round(shell_total_passed / max(1, len(eligible))))
-shell_avg_failed    = int(round(shell_total_failed / max(1, len(eligible))))
-shell_avg_total     = int(round((shell_total_passed + shell_total_failed + shell_total_skipped) / max(1, len(eligible))))
-
-# Top additional test failures across runs
-shell_fail_counts = {}
-for run in eligible:
-    for t in run.get("shell_failed_tests", []):
-        k = t["title"]
-        shell_fail_counts[k] = shell_fail_counts.get(k, 0) + 1
-top_shell = sorted(shell_fail_counts.items(), key=lambda x: -x[1])[:10]
-
 rate_cls = "rate-ok" if pass_rate >= 90 else ("rate-warn" if pass_rate >= 70 else "rate-bad")
 
 now_utc = datetime.now(timezone.utc)
@@ -948,24 +933,6 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
 })();
 </script>
 ''')
-
-        # Additional test results section
-        fh.write('<div class="section-lbl">Additional test results</div>\n')
-        fh.write('<div class="stats-row" style="margin-bottom:.5rem">\n')
-        fh.write(f'<div class="stat-box"><div class="stat-val">{shell_avg_total}</div><div class="stat-lbl">Avg tests/run</div></div>\n')
-        fh.write(f'<div class="stat-box"><div class="stat-val">{shell_avg_passed}</div><div class="stat-lbl">Avg passed/run</div></div>\n')
-        fh.write(f'<div class="stat-box stat-fail"><div class="stat-val">{shell_total_failed}</div><div class="stat-lbl">Total failures</div></div>\n')
-        fh.write(f'<div class="stat-box stat-flaky"><div class="stat-val">{shell_total_skipped}</div><div class="stat-lbl">Total skipped</div></div>\n')
-        fh.write('</div>\n')
-        if top_shell:
-            fh.write('<div class="table-scroll"><table><tr><th>Test</th><th style="width:4rem">Fails</th></tr>\n')
-            for title, count in top_shell:
-                s = short_name(title)
-                short = s[-70:] if len(s) > 70 else s
-                fh.write(f'<tr><td title="{esc(title)}">{esc(short)}</td><td>{count}</td></tr>\n')
-            fh.write('</table></div>\n')
-        else:
-            fh.write('<p style="font-size:.8rem;color:#94a3b8;margin:.25rem 0">No additional test failures recorded.</p>\n')
 
         fh.write('</div>\n')
 

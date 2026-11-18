@@ -420,7 +420,7 @@ class DetailedStatsTests(unittest.TestCase):
             self.assertIn("else if(v==='retried')", dashboard)
             self.assertIn("shell failure", run["shell_failed_tests"][0]["error"])
             self.assertIn("JSON test results", dashboard)
-            self.assertIn("Additional test results", dashboard)
+            self.assertNotIn("Additional test results", dashboard)
             self.assertNotIn("JUnit-format test results", dashboard)
             self.assertNotIn("Failed shell tests", dashboard)
 
