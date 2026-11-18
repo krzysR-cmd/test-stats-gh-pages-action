@@ -794,15 +794,6 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
       for(var i=0;i<flaky.length;i++){var t=flaky[i],s=clip(shortName(t.title),70);
         html+='<li title="'+esc(t.title)+'">'+esc(s)+' <strong>('+t.attempts+' attempts)</strong></li>';}
       html+='</ul>';}
-    // Slowest tests
-    var slow=run.slowest_tests||[];
-    if(slow.length){
-      html+='<div class="section-lbl">Slowest tests (this run)</div>';
-      html+='<div class="table-scroll"><table><tr><th>Test</th><th style="width:5rem;color:#6b7280">Time</th></tr>';
-      for(var i=0;i<slow.length;i++){var t=slow[i],s=clip(shortName(t.title),60);
-        html+='<tr><td title="'+esc(t.title)+'">'+esc(s)+'</td><td style="color:#6b7280">'+fmtDur(t.duration_ms)+'</td></tr>';}
-      html+='</table></div>';
-    }
     detail.innerHTML=html;
   }
   picker.addEventListener('change',function(){renderRun(RUNS[parseInt(this.value,10)]);});
@@ -883,7 +874,7 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
   var sel=document.getElementById('agg-picker');
   var box=document.getElementById('agg-detail');
   function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-  function fmtDur(ms){if(!ms)return '&mdash;';var s=ms/1000;if(s<60)return s.toFixed(0)+'s';return Math.floor(s/60)+'m '+Math.floor(s%60)+'s';}
+  function fmtDur(ms){if(!ms)return '&mdash;';if(ms<1000)return Math.round(ms)+' ms';var s=ms/1000;if(s<60)return s.toFixed(0)+'s';return Math.floor(s/60)+'m '+Math.floor(s%60)+'s';}
   function shortName(t){var p=t.split('>').map(function(x){return x.trim();}).filter(Boolean);return p.length>=2?p.slice(-2).join(' › '):(p[p.length-1]||t);}
   function clip(s,n){return s.length>n?s.slice(-n):s;}
   function highlightTests(v){

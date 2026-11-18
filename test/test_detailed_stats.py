@@ -414,8 +414,14 @@ class DetailedStatsTests(unittest.TestCase):
             self.assertEqual(junit_tests["syntax > fail"]["duration_ms"], 500)
             self.assertEqual(junit_tests["syntax > skip"]["duration_ms"], 0)
             self.assertIn("Test trends (last 30 days)", dashboard)
+            self.assertNotIn("Slowest tests (this run)", dashboard)
             self.assertIn("900 ms", dashboard)
-            self.assertIn("if(ms<1000)return Math.round(ms)+' ms'", dashboard)
+            self.assertEqual(
+                dashboard.count(
+                    "function fmtDur(ms){if(!ms)return '&mdash;';if(ms<1000)return Math.round(ms)+' ms'"
+                ),
+                2,
+            )
             self.assertIn('"flaky": [["suite > retries", 1]]', dashboard)
             self.assertIn("else if(v==='flaky')", dashboard)
             self.assertIn("else if(v==='longest')", dashboard)
