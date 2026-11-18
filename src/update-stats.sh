@@ -760,7 +760,7 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
       }else if(test.change==='changed'){
         change='<span class="change-badge change-updated">'+esc(test.previous_status||'unknown')+' &rarr; '+esc(status)+'</span>';
       }
-      rows+='<tr data-test-title="'+esc(title)+'"><td title="'+esc(title)+'">'+esc(clip(shortName(title),90))+'</td>'
+      rows+='<tr data-test-title="'+esc(title)+'" data-test-status="'+esc(status)+'"><td title="'+esc(title)+'">'+esc(clip(shortName(title),90))+'</td>'
         +'<td>'+esc(['JUnit','NUnit','xUnit','VSTest'].includes(test.source)?'Additional':test.source||'')+'</td><td><span class="status-badge '+statusClass+'">'+esc(status)+'</span></td>'
         +'<td>'+fmtTestDur(test.duration_ms)+'</td><td>'+change+'</td></tr>';
     }
@@ -956,7 +956,8 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
     for(var i=0;i<data.length;i++){selected[data[i][0]]=true;}
     var rows=document.querySelectorAll('#all-tests-body tr');
     for(var i=0;i<rows.length;i++){
-      rows[i].classList.toggle('test-trend-match',!!selected[rows[i].getAttribute('data-test-title')]);
+      var isFailed=v==='top'&&rows[i].getAttribute('data-test-status')==='failed';
+      rows[i].classList.toggle('test-trend-match',!!selected[rows[i].getAttribute('data-test-title')]||isFailed);
     }
   }
   function render(v){

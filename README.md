@@ -93,7 +93,9 @@ It creates/updates:
   selectable sizes of 30, 50, or 100, Prev/Next controls, a displayed range,
   and a page count. It marks new tests and status changes against the previous run,
   and includes failures from each configured result source in the Top failing
-  Test trends view. Failures seen in only some runs are included in the Flaky
+  Test trends view. Selecting Top failing tests highlights every failed test
+  in the selected run in yellow; the trend list remains limited to the top five
+  across the history. Failures seen in only some runs are included in the Flaky
   tests trend.
   Detailed statistics are enabled by default and can be disabled with
   `detailed-statistics: "false"`.

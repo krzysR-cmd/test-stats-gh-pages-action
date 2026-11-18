@@ -2,6 +2,7 @@ import datetime as dt
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -668,6 +669,74 @@ class DetailedStatsTests(unittest.TestCase):
             self.assertEqual(len(trends["top"]), 5)
             self.assertEqual(len(trends["flaky"]), 5)
             self.assertEqual(len(trends["retried"]), 5)
+            node = shutil.which("node")
+            if node is None:
+                self.skipTest("Node.js is required to exercise dashboard behavior")
+            script_start = dashboard.index(
+                "<script>\n(function(){\n  var sel=document.getElementById('agg-picker');"
+            ) + len("<script>")
+            script_end = dashboard.index("</script>", script_start)
+            rows = [
+                {"title": f"trends > failed-{index}", "status": "failed"}
+                for index in range(1, 7)
+            ] + [
+                {"title": f"trends > flaky-{index}", "status": "flaky"}
+                for index in range(1, 7)
+            ]
+            result = subprocess.run(
+                [node, "-e", """
+                    const { runInNewContext } = require('vm');
+                    const input = JSON.parse(process.argv[1]);
+                    const rows = input.rows.map(row => {
+                      const classes = new Set();
+                      return {
+                        getAttribute(name) {
+                          return name === 'data-test-title' ? row.title : row.status;
+                        },
+                        classList: {
+                          toggle(name, enabled) {
+                            if (enabled) classes.add(name);
+                            else classes.delete(name);
+                          }
+                        },
+                        classes
+                      };
+                    });
+                    const picker = {
+                      value: 'top',
+                      addEventListener(name, callback) { this.listener = callback; }
+                    };
+                    const box = { innerHTML: '' };
+                    const document = {
+                      getElementById(name) { return name === 'agg-picker' ? picker : box; },
+                      querySelectorAll() { return rows; }
+                    };
+                    runInNewContext(input.script, { document, AGG: input.trends });
+                    const highlighted = () => rows
+                      .filter(row => row.classes.has('test-trend-match'))
+                      .map(row => row.getAttribute('data-test-title'));
+                    const top = highlighted();
+                    picker.value = 'flaky';
+                    picker.listener.call(picker);
+                    process.stdout.write(JSON.stringify({ top, flaky: highlighted() }));
+                """, json.dumps({
+                    "script": dashboard[script_start:script_end],
+                    "trends": trends,
+                    "rows": rows,
+                })],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            highlights = json.loads(result.stdout)
+            self.assertEqual(
+                set(highlights["top"]),
+                {f"trends > failed-{index}" for index in range(1, 7)},
+            )
+            self.assertEqual(
+                set(highlights["flaky"]),
+                {title for title, _ in trends["flaky"]},
+            )
 
     def test_longest_tests_trend_includes_timed_junit_results(self):
         with tempfile.TemporaryDirectory() as tmp:
