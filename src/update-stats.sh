@@ -525,6 +525,8 @@ total_failed   = sum(r.get("failed", 0) for r in eligible)
 total_flaky    = sum(r.get("flaky_count", 0) for r in eligible)
 avg_passed     = int(round(total_passed / max(1, len(eligible))))
 avg_total      = int(round(total_executed / max(1, len(eligible))))
+avg_failed     = round(total_failed / max(1, len(eligible)), 1)
+avg_flaky      = round(total_flaky / max(1, len(eligible)), 1)
 pass_rate      = round(100 * (1 - total_failed / max(1, sum(r.get("total", 0) for r in eligible))), 1)
 
 durations      = [r.get("duration_ms", 0) for r in eligible if r.get("duration_ms", 0) > 0]
@@ -881,8 +883,8 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
         fh.write('<div class="stats-row">\n')
         fh.write(f'<div class="stat-box"><div class="stat-val">{avg_total}</div><div class="stat-lbl">Avg tests/run</div></div>\n')
         fh.write(f'<div class="stat-box"><div class="stat-val">{avg_passed}</div><div class="stat-lbl">Avg passed/run</div></div>\n')
-        fh.write(f'<div class="stat-box stat-fail"><div class="stat-val">{total_failed}</div><div class="stat-lbl">Total failures</div></div>\n')
-        fh.write(f'<div class="stat-box stat-flaky"><div class="stat-val">{total_flaky}</div><div class="stat-lbl">Total flaky</div></div>\n')
+        fh.write(f'<div class="stat-box stat-fail"><div class="stat-val">{avg_failed:g}</div><div class="stat-lbl">Avg failures/run</div></div>\n')
+        fh.write(f'<div class="stat-box stat-flaky"><div class="stat-val">{avg_flaky:g}</div><div class="stat-lbl">Avg flaky/run</div></div>\n')
         fh.write('</div>\n')
         if any(durations):
             fh.write('<div class="section-lbl">Execution time</div>\n')

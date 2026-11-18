@@ -83,7 +83,8 @@ It creates/updates:
   link to the published dashboard; plus action outputs `total`, `passed`,
   `failed`, `skipped`, and `stats-file`.
 - `stats/runs.json` and `stats/index.html` — the detailed rolling 30-day
-  per-test dashboard. It lists all tests captured by
+  per-test dashboard, including average failures and flaky tests per run across
+  eligible runs. It lists all tests captured by
   the selected run (the newest run by default), with a selector at the top of
   the dashboard, including each test's execution time when the result file
   provides it. The Test, Source, Status, Execution time, and Change columns can be

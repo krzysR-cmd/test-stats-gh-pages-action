@@ -12,6 +12,57 @@ SCRIPT = Path(__file__).parents[1] / "src" / "update-stats.sh"
 
 
 class DetailedStatsTests(unittest.TestCase):
+    def test_dashboard_shows_average_failures_and_flaky_tests_per_run(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            results = root / "results"
+            results.mkdir()
+            playwright = results / "playwright.json"
+            site = root / "site"
+
+            for number, unexpected, flaky in ((1, 3, 1), (2, 0, 2)):
+                playwright.write_text(json.dumps({
+                    "stats": {
+                        "expected": 2,
+                        "unexpected": unexpected,
+                        "flaky": flaky,
+                        "skipped": 0,
+                        "duration": 1000,
+                    },
+                    "suites": [],
+                }))
+                env = os.environ.copy()
+                env.update({
+                    "RESULTS_DIR": str(results),
+                    "SITE_DIR": str(site),
+                    "GITHUB_RUN_NUMBER": str(number),
+                    "GITHUB_RUN_ID": f"run-{number}",
+                    "GITHUB_SERVER_URL": "https://github.com",
+                    "GITHUB_REPOSITORY": "owner/repo",
+                })
+                subprocess.run(
+                    ["bash", str(SCRIPT)],
+                    check=True,
+                    env=env,
+                    capture_output=True,
+                    text=True,
+                )
+
+            dashboard = (site / "stats" / "index.html").read_text()
+
+            self.assertIn(
+                '<div class="stat-box stat-fail"><div class="stat-val">1.5</div>'
+                '<div class="stat-lbl">Avg failures/run</div></div>',
+                dashboard,
+            )
+            self.assertIn(
+                '<div class="stat-box stat-flaky"><div class="stat-val">1.5</div>'
+                '<div class="stat-lbl">Avg flaky/run</div></div>',
+                dashboard,
+            )
+            self.assertNotIn("Total failures", dashboard)
+            self.assertNotIn("Total flaky", dashboard)
+
     def test_reads_vstest_trx_as_supplemental_test_results(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
