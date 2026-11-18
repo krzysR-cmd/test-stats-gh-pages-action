@@ -534,6 +534,7 @@ min_dur_ms     = min(durations) if durations else 0
 
 def fmt_dur(ms):
     if not ms: return "—"
+    if ms < 1000: return f"{ms:.0f} ms"
     s = ms / 1000
     if s < 60: return f"{s:.0f}s"
     return f"{int(s // 60)}m {int(s % 60)}s"
@@ -688,7 +689,7 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
   var currentPage=0;
   var currentTests=[];
   function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-  function fmtDur(ms){if(!ms)return '&mdash;';var s=ms/1000;if(s<60)return s.toFixed(0)+'s';return Math.floor(s/60)+'m '+Math.floor(s%60)+'s';}
+  function fmtDur(ms){if(!ms)return '&mdash;';if(ms<1000)return Math.round(ms)+' ms';var s=ms/1000;if(s<60)return s.toFixed(0)+'s';return Math.floor(s/60)+'m '+Math.floor(s%60)+'s';}
   function fmtTestDur(ms){if(typeof ms!=='number'||ms<=0)return '&mdash;';if(ms<1000)return Math.round(ms)+' ms';if(ms<60000)return (ms/1000).toFixed(2)+' s';var s=ms/1000;return Math.floor(s/60)+'m '+(s%60).toFixed(1)+'s';}
   function shortName(t){var p=t.split('>').map(function(x){return x.trim();}).filter(Boolean);return p.length>=2?p.slice(-2).join(' › '):(p[p.length-1]||t);}
   function clip(s,n){return s.length>n?s.slice(-n):s;}

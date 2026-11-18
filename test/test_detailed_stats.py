@@ -349,7 +349,7 @@ class DetailedStatsTests(unittest.TestCase):
             results = root / "results"
             results.mkdir()
             (results / "playwright.json").write_text(json.dumps({
-                "stats": {"expected": 2, "unexpected": 1, "flaky": 1, "skipped": 1, "duration": 1200},
+                "stats": {"expected": 2, "unexpected": 1, "flaky": 1, "skipped": 1, "duration": 900},
                 "suites": [{
                     "title": "suite",
                     "specs": [
@@ -414,6 +414,8 @@ class DetailedStatsTests(unittest.TestCase):
             self.assertEqual(junit_tests["syntax > fail"]["duration_ms"], 500)
             self.assertEqual(junit_tests["syntax > skip"]["duration_ms"], 0)
             self.assertIn("Test trends (last 30 days)", dashboard)
+            self.assertIn("900 ms", dashboard)
+            self.assertIn("if(ms<1000)return Math.round(ms)+' ms'", dashboard)
             self.assertIn('"flaky": [["suite > retries", 1]]', dashboard)
             self.assertIn("else if(v==='flaky')", dashboard)
             self.assertIn("else if(v==='longest')", dashboard)
