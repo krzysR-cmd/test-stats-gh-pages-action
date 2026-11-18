@@ -794,32 +794,9 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
       +'<span style="font-size:.78rem;color:#64748b">'+esc(ts)+'</span>'
       +'<a href="'+esc(run.run_url)+'" target="_blank" style="font-size:.78rem">View on GitHub ↗</a>'
       +'</div>';
-    // Failed tests from JSON results
-    var failed=run.failed_tests||[];
-    html+='<div class="section-lbl">Failed tests from JSON results ('+failed.length+')</div>';
-    if(!failed.length){
-      if(run.failed>0){
-        html+='<p class="comparison-note">'+run.failed+' failure(s); individual test details were not saved for this run.</p>';
-      }else{
-        html+='<p style="font-size:.8rem;color:#15803d;margin:.2rem 0">No failures ✓</p>';
-      }
-    }else{
-      html+='<div class="table-scroll"><table><tr><th>Test</th><th>Error (truncated)</th></tr>';
-      for(var i=0;i<failed.length;i++){var t=failed[i],s=clip(shortName(t.title),65),e=(t.error||'').slice(0,140);
-        html+='<tr><td title="'+esc(t.title)+'">'+esc(s)+'</td><td style="font-family:monospace;font-size:.7rem;color:#6b7280;text-align:left;max-width:22rem;white-space:pre-wrap">'+esc(e)+'</td></tr>';}
-      html+='</table></div>';
-    }
-    // Failed tests from supplemental results
     var sf=run.shell_failed_tests||[];
-    if(run.shell_failed>0||sf.length){
-      html+='<div class="section-lbl">Failed additional tests ('+sf.length+')</div>';
-      if(!sf.length){
-        html+='<p class="comparison-note">'+run.shell_failed+' failure(s); individual test details were not saved for this run.</p>';
-      }
-      else{html+='<div class="table-scroll"><table><tr><th>Test</th><th>Error</th></tr>';
-        for(var i=0;i<sf.length;i++){var t=sf[i],s=clip(shortName(t.title),65),e=(t.error||'').slice(0,140);
-          html+='<tr><td title="'+esc(t.title)+'">'+esc(s)+'</td><td style="font-family:monospace;font-size:.7rem;color:#6b7280;text-align:left;max-width:22rem;white-space:pre-wrap">'+esc(e)+'</td></tr>';}
-        html+='</table></div>';}
+    if(!sf.length && run.shell_failed>0){
+      html+='<p class="comparison-note">'+run.shell_failed+' failure(s); individual test details were not saved for this run.</p>';
     }
     // Flaky tests
     var flaky=run.flaky_tests||[];

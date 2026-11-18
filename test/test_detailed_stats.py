@@ -168,6 +168,8 @@ class DetailedStatsTests(unittest.TestCase):
             )
             self.assertEqual(len(run["tests"]), 30)
             self.assertEqual(len(run["shell_failed_tests"]), 9)
+            self.assertNotIn("Failed additional tests", dashboard)
+            self.assertNotIn("Failed tests from JSON results", dashboard)
             self.assertIn(
                 "<title>repo · DBTestCompare &amp; tests &middot; Test Statistics</title>",
                 dashboard,
@@ -176,6 +178,7 @@ class DetailedStatsTests(unittest.TestCase):
                 "repo · DBTestCompare &amp; tests &middot; Test Statistics",
                 dashboard,
             )
+            self.assertNotIn("Failed tests from JSON results", dashboard)
 
     def test_uses_repository_name_for_dashboard_title_by_default(self):
         with tempfile.TemporaryDirectory() as tmp:
