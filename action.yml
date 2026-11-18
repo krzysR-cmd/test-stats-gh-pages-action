@@ -21,9 +21,9 @@ inputs:
     required: false
     default: reusable-stats
   report-name:
-    description: Label used in the GitHub Actions summary and detailed dashboard title.
+    description: Optional extra label appended to the repository name in the detailed dashboard title and used in the summary.
     required: false
-    default: Test results
+    default: ""
   dashboard-url:
     description: Published URL of the test statistics dashboard to link in the GitHub Actions summary.
     required: false

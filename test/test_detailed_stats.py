@@ -62,9 +62,51 @@ class DetailedStatsTests(unittest.TestCase):
             )
             self.assertEqual(len(run["tests"]), 30)
             self.assertEqual(len(run["shell_failed_tests"]), 9)
-            self.assertIn("<title>DBTestCompare &amp; tests — Test Statistics</title>", dashboard)
             self.assertIn(
-                "DBTestCompare &amp; tests &middot; Test Statistics",
+                "<title>repo · DBTestCompare &amp; tests &middot; Test Statistics</title>",
+                dashboard,
+            )
+            self.assertIn(
+                "repo · DBTestCompare &amp; tests &middot; Test Statistics",
+                dashboard,
+            )
+
+    def test_uses_repository_name_for_dashboard_title_by_default(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            results = root / "results"
+            results.mkdir()
+            shell_xml = root / "shell.xml"
+            shell_xml.write_text('<testsuite name="example"/>')
+            site = root / "site"
+            env = os.environ.copy()
+            env.update({
+                "RESULTS_DIR": str(results),
+                "SITE_DIR": str(site),
+                "SHELL_TESTS_XML": str(shell_xml),
+                "GITHUB_RUN_NUMBER": "1",
+                "GITHUB_RUN_ID": "run-1",
+                "GITHUB_SERVER_URL": "https://github.com",
+                "GITHUB_REPOSITORY": "Accenture/DBTestCompare",
+            })
+            env.pop("REPORT_NAME", None)
+            subprocess.run(
+                ["bash", str(SCRIPT)],
+                check=True,
+                cwd=root,
+                env=env,
+                capture_output=True,
+                text=True,
+            )
+
+            dashboard = (site / "stats" / "index.html").read_text()
+
+            self.assertIn(
+                "<title>DBTestCompare &middot; Test Statistics</title>",
+                dashboard,
+            )
+            self.assertIn(
+                "DBTestCompare &middot; Test Statistics</span>",
                 dashboard,
             )
 

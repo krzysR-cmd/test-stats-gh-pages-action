@@ -292,8 +292,9 @@ def main():
     store["runs"] = recent
 
     atomic_json(runs_path, store)
-    make_dashboard(runs_path, recent, env("INPUT_REPORT_NAME", "Test results"), window_days)
-    write_summary(env("INPUT_REPORT_NAME", "Test results"), run)
+    report_name = env("INPUT_REPORT_NAME").strip() or "Test results"
+    make_dashboard(runs_path, recent, report_name, window_days)
+    write_summary(report_name, run)
     write_outputs(run, runs_path)
     print(
         f"Test results: {run['passed']} passed, {run['failed']} failed, "

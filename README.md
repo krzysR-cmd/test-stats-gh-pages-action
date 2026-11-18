@@ -71,8 +71,11 @@ are also exposed separately as `flaky_count` in the normalized run record.
 JUnit XML results from any runner contribute to the normalized results and
 summary. The detailed dashboard can include Playwright-format JSON and an
 optional JUnit XML reports; `shell-test-results` accepts a file path or glob pattern
-for JUnit results from any test runner. The `report-name` input also labels
-the detailed dashboard title.
+for JUnit results from any test runner. The detailed dashboard title uses the
+repository name by default; optional `report-name` text is appended to it.
+For example, `DBTestCompare` with `report-name: Test results` displays
+“DBTestCompare · Test results · Test Statistics.” The GitHub Actions summary
+continues to use “Test results” when `report-name` is omitted.
 
 ## Permissions and deployment
 

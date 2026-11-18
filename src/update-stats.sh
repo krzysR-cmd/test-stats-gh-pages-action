@@ -31,7 +31,10 @@ def strip_ansi(s):
 results_dir     = os.environ.get("RESULTS_DIR", "downloaded-results")
 site_dir        = os.environ.get("SITE_DIR", "site")
 shell_tests_xml = os.environ.get("SHELL_TESTS_XML", "")
-report_name     = os.environ.get("REPORT_NAME", "Test results")
+report_name     = os.environ.get("REPORT_NAME", "").strip()
+repository_name = os.environ.get("GITHUB_REPOSITORY", "").rsplit("/", 1)[-1].strip()
+dashboard_name  = " · ".join(name for name in (repository_name, report_name) if name)
+dashboard_name  = dashboard_name or "Test results"
 run_number      = os.environ.get("GITHUB_RUN_NUMBER", "0")
 run_url         = "{}/{}/actions/runs/{}".format(
     os.environ.get("GITHUB_SERVER_URL", "https://github.com"),
@@ -372,7 +375,7 @@ with open(dashboard, "w") as fh:
     fh.write(f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{esc(report_name)} — Test Statistics</title>
+<title>{esc(dashboard_name)} &middot; Test Statistics</title>
 <style>
 *{{box-sizing:border-box}}
 body{{font-family:system-ui,-apple-system,Arial,sans-serif;margin:0;background:#f0f2f5;color:#1a1a2e;min-height:100vh}}
@@ -447,7 +450,7 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
 </style>
 </head><body>
 <div class="topbar">
-  <span class="topbar-title">{esc(report_name)} &middot; Test Statistics</span>
+  <span class="topbar-title">{esc(dashboard_name)} &middot; Test Statistics</span>
   <a href="../">&larr; All reports</a>
   <span class="topbar-meta">Last 30 days &middot; Updated {esc(updated_label)}</span>
 </div>
