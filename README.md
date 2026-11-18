@@ -2,6 +2,8 @@
 
 [![Test stats](https://img.shields.io/badge/test%20stats-30%20days-blue)](https://raczeja.github.io/test-stats-gh-pages-action/stats/)
 
+[Ask DeepWiki](https://deepwiki.com/raczeja/test-stats-gh-pages-action)
+
 [![Test statistics dashboard](screenshots/stats-dashboard.png)](https://raczeja.github.io/test-stats-gh-pages-action/stats/)
 
 Composite GitHub Action for parsing test-result files, writing a GitHub Actions
