@@ -95,14 +95,20 @@ It creates/updates:
   then flaky tests, then new and changed tests, with test name as the tie-breaker.
   Headline statistics include all configured result sources, and the selected run
   shows available failure details from JSON and XML reports.
-  The test table is paginated with 30 tests per page by default,
+  The test table can be filtered by test-name search, available source, status,
+  change type, and minimum/maximum execution time in seconds. Filters apply
+  before sorting and pagination and refresh when another run is selected.
+  The latest run is selected by default whenever the dashboard loads. Filters,
+  pagination, sorting, and trend selection are remembered in a site-scoped
+  cookie. A reset control clears saved preferences and restores defaults. The
+  table is paginated with 30 tests per page by default,
   selectable sizes of 30, 50, or 100, Prev/Next controls, a displayed range,
-  and a page count. It marks new tests and status changes against the previous run,
-  and includes failures from each configured result source in the Top failing
-  Test trends view. Selecting Top failing tests highlights every failed test
-  in the selected run in yellow; the trend list remains limited to the top five
-  across the history. Failures seen in only some runs are included in the Flaky
-  tests trend.
+  and a page count. It marks new tests and status changes against the previous
+  run, and includes failures from each configured result source in the Top
+  failing Test trends view. Selecting Top failing tests highlights every failed
+  test in the selected run in yellow; the trend list remains limited to the top
+  five across the history. Failures seen in only some runs are included in the
+  Flaky tests trend.
   Detailed statistics are enabled by default and can be disabled with
   `detailed-statistics: "false"`.
 

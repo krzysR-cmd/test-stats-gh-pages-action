@@ -650,6 +650,20 @@ td:last-child{{text-align:right;font-weight:700;color:#dc2626;white-space:nowrap
 .test-pagination button{{border:1px solid #cbd5e1;border-radius:.375rem;background:#fff;color:#334155;padding:.3rem .6rem;cursor:pointer}}
 .test-pagination button:disabled{{color:#94a3b8;background:#f8fafc;cursor:not-allowed}}
 .test-pagination select{{border:1px solid #cbd5e1;border-radius:.375rem;background:#fff;color:#334155;padding:.3rem}}
+.test-filters{{display:grid;grid-template-columns:repeat(auto-fit,minmax(12rem,1fr));gap:.75rem;margin:.75rem 0}}
+.test-filter-group{{border:1px solid #e2e8f0;border-radius:.4rem;padding:.45rem .6rem;margin:0;min-width:0}}
+.test-filter-group legend{{font-size:.72rem;font-weight:700;color:#64748b;padding:0 .2rem}}
+.test-filter-options{{display:flex;flex-wrap:wrap;gap:.35rem .65rem;max-height:6rem;overflow:auto}}
+.test-filter-options label,.test-filter-time label{{font-size:.76rem;color:#475569;display:inline-flex;align-items:center;gap:.25rem}}
+.test-filter-name{{grid-column:1/-1}}
+.test-filter-name input,.test-filter-time input{{box-sizing:border-box;border:1px solid #cbd5e1;border-radius:.3rem;padding:.35rem .45rem;color:#334155}}
+.test-filter-name input{{width:100%;margin-top:.25rem}}
+.test-filter-time-fields{{display:flex;gap:.5rem}}
+.test-filter-time-fields label{{flex:1;display:block}}
+.test-filter-time input{{width:100%;margin-top:.2rem}}
+.test-filter-reset{{align-self:start;border:1px solid #cbd5e1;border-radius:.375rem;background:#fff;color:#334155;padding:.4rem .65rem;cursor:pointer}}
+.test-filter-reset:hover{{background:#f8fafc}}
+.test-filter-empty{{text-align:center;color:#64748b;padding:.75rem}}
 a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
 .empty{{text-align:center;padding:4rem;color:#94a3b8}}
 @media(max-width:640px){{
@@ -701,6 +715,7 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
             _selected = " selected" if _orig_idx == len(runs) - 1 else ""
             fh.write(f'<option value="{_orig_idx}"{_selected}>{esc(_label)}</option>\n')
         fh.write('</select>\n')
+        fh.write('<button type="button" class="test-filter-reset" id="reset-dashboard-preferences">Reset filters and selections</button>\n')
         fh.write('<div id="selected-run-tests"></div>\n')
         fh.write('<div id="run-detail" style="margin-top:.875rem"></div>\n')
         _runs_json = json.dumps(runs).replace('</', '<\\/')
@@ -711,12 +726,51 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
   var picker=document.getElementById('run-picker');
   var testsBox=document.getElementById('selected-run-tests');
   var detail=document.getElementById('run-detail');
-  var testsPerPage=30;
-  var currentPage=0;
+  var cookiePath=location.pathname.slice(0,location.pathname.lastIndexOf('/')+1)||'/';
+  var cookieName='testStatsPrefs_'+cookiePath.replace(/[^a-zA-Z0-9]/g,'_');
+  function readPrefs(){
+    var prefix=cookieName+'=',cookies=document.cookie.split(';');
+    for(var i=0;i<cookies.length;i++){
+      var item=cookies[i].trim();
+      if(item.indexOf(prefix)===0){
+        try{return JSON.parse(decodeURIComponent(item.slice(prefix.length)))||{};}catch(error){return {};}
+      }
+    }
+    return {};
+  }
+  var savedPrefs=readPrefs();
+  var allowedPageSizes=[30,50,100];
+  var allowedSortColumns=['priority','title','source','status','duration','change'];
+  var testsPerPage=allowedPageSizes.indexOf(Number(savedPrefs.testsPerPage))!==-1?Number(savedPrefs.testsPerPage):30;
+  var currentPage=Number.isInteger(savedPrefs.currentPage)&&savedPrefs.currentPage>=0?savedPrefs.currentPage:0;
+  var allTests=[];
   var currentTests=[];
-  var sortColumn='priority';
-  var sortDirection=1;
+  var sortColumn=allowedSortColumns.indexOf(savedPrefs.sortColumn)!==-1?savedPrefs.sortColumn:'priority';
+  var sortDirection=savedPrefs.sortDirection===-1?-1:1;
   function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+  function savePrefs(){
+    var name=document.getElementById('test-name-filter');
+    var minTime=document.getElementById('test-time-min');
+    var maxTime=document.getElementById('test-time-max');
+    var latestPrefs=readPrefs();
+    var prefs={
+      testsPerPage:testsPerPage,
+      currentPage:currentPage,
+      sortColumn:sortColumn,
+      sortDirection:sortDirection,
+      testName:name?name.value:'',
+      minTime:minTime?minTime.value:'',
+      maxTime:maxTime?maxTime.value:'',
+      'test-filter-source':checkedValues('test-filter-source'),
+      'test-filter-status':checkedValues('test-filter-status'),
+      'test-filter-change':checkedValues('test-filter-change'),
+      aggPicker:latestPrefs.aggPicker||savedPrefs.aggPicker||'top'
+    };
+    var aggPicker=document.getElementById('agg-picker');
+    if(aggPicker&&['top','flaky','longest','retried'].indexOf(aggPicker.value)!==-1){prefs.aggPicker=aggPicker.value;}
+    document.cookie=cookieName+'='+encodeURIComponent(JSON.stringify(prefs))+'; Path='+cookiePath+'; Max-Age=31536000; SameSite=Lax';
+    savedPrefs=prefs;
+  }
   function fmtDur(ms){if(!ms)return '&mdash;';if(ms<1000)return Math.round(ms)+' ms';var s=ms/1000;if(s<60)return s.toFixed(0)+'s';return Math.floor(s/60)+'m '+Math.floor(s%60)+'s';}
   function fmtTestDur(ms){if(typeof ms!=='number'||ms<=0)return '&mdash;';if(ms<1000)return Math.round(ms)+' ms';if(ms<60000)return (ms/1000).toFixed(2)+' s';var s=ms/1000;return Math.floor(s/60)+'m '+(s%60).toFixed(1)+'s';}
   function shortName(t){var p=t.split('>').map(function(x){return x.trim();}).filter(Boolean);return p.length>=2?p.slice(-2).join(' › '):(p[p.length-1]||t);}
@@ -727,6 +781,48 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
   }
   function sourceLabel(test){
     return test.source_file||(['JUnit','NUnit','xUnit','VSTest'].includes(test.source)?'Additional':test.source||'');
+  }
+  function changeValue(test){
+    return test.change==='new'?'new':(test.change==='changed'?'changed':'unchanged');
+  }
+  function changeLabel(value){
+    return value==='new'?'New':(value==='changed'?'Changed':'Unchanged');
+  }
+  function checkboxFilter(className,values){
+    return '<fieldset class="test-filter-group"><legend>'+esc(className==='test-filter-source'?'Source':(className==='test-filter-status'?'Status':'Change'))+'</legend>'
+      +'<div class="test-filter-options">'+values.map(function(value){
+        var saved=savedPrefs[className];
+        var checked=Array.isArray(saved)?saved.indexOf(value)!==-1:true;
+        return '<label><input type="checkbox" class="'+className+'" value="'+esc(value)+'"'+(checked?' checked':'')+'>'+esc(className==='test-filter-change'?changeLabel(value):value)+'</label>';
+      }).join('')+'</div></fieldset>';
+  }
+  function checkedValues(className){
+    var inputs=testsBox.querySelectorAll('.'+className),values=[];
+    for(var i=0;i<inputs.length;i++){if(inputs[i].checked){values.push(inputs[i].value);}}
+    return values;
+  }
+  function applyTestFilters(resetPage){
+    var name=(document.getElementById('test-name-filter').value||'').trim().toLowerCase();
+    var sources=checkedValues('test-filter-source');
+    var statuses=checkedValues('test-filter-status');
+    var changes=checkedValues('test-filter-change');
+    var minValue=document.getElementById('test-time-min').value;
+    var maxValue=document.getElementById('test-time-max').value;
+    var minTime=minValue===''?null:Number(minValue)*1000;
+    var maxTime=maxValue===''?null:Number(maxValue)*1000;
+    var hasTimeFilter=(minTime!==null&&isFinite(minTime))||(maxTime!==null&&isFinite(maxTime));
+    currentTests=allTests.filter(function(test){
+      var duration=Number(test.duration_ms)||0;
+      return (!name||(test.title||'').toLowerCase().indexOf(name)!==-1)
+        &&sources.indexOf(sourceLabel(test))!==-1
+        &&statuses.indexOf(test.status||'unknown')!==-1
+        &&changes.indexOf(changeValue(test))!==-1
+        &&(!hasTimeFilter||duration>0)
+        &&(minTime===null||!isFinite(minTime)||duration>=minTime)
+        &&(maxTime===null||!isFinite(maxTime)||duration<=maxTime);
+    }).sort(function(a,b){return compareTestValues(a,b,sortColumn);});
+    if(resetPage!==false){currentPage=0;}
+    renderTestPage();
   }
   function changeRank(test){
     return test.change==='new'?0:(test.change==='changed'?1:2);
@@ -791,6 +887,7 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
         +'<td>'+esc(sourceLabel(test))+'</td><td><span class="status-badge '+statusClass+'">'+esc(status)+'</span></td>'
         +'<td>'+fmtTestDur(test.duration_ms)+'</td><td>'+change+'</td></tr>';
     }
+    if(!currentTests.length){rows='<tr><td class="test-filter-empty" colspan="5">No tests match these filters.</td></tr>';}
     document.getElementById('all-tests-body').innerHTML=rows;
     document.getElementById('test-page-range').textContent='Showing '+(currentTests.length?start+1:0)+'-'+end+' of '+currentTests.length+' tests';
     document.getElementById('test-page-count').textContent='Page '+(currentPage+1)+' of '+pageCount;
@@ -798,11 +895,12 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
     document.getElementById('test-page-next').disabled=currentPage>=pageCount-1;
     var aggPicker=document.getElementById('agg-picker');
     if(aggPicker){aggPicker.dispatchEvent(new Event('change'));}
+    savePrefs();
   }
   function renderTests(run){
     var tests=run.tests||[];
-    currentTests=tests.slice().sort(function(a,b){return compareTestValues(a,b,sortColumn);});
-    currentPage=0;
+    allTests=tests.slice();
+    currentTests=allTests.slice().sort(function(a,b){return compareTestValues(a,b,sortColumn);});
     var counts={total:0,passed:0,failed:0,flaky:0,skipped:0};
     if(tests.length){
       counts.total=tests.length;
@@ -835,7 +933,20 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
       testsBox.innerHTML=html;
       return;
     }
-    html+='<div class="test-pagination" aria-label="Test table pagination">'
+    var sources=Array.from(new Set(tests.map(sourceLabel))).sort(function(a,b){return a.localeCompare(b);});
+    var statuses=Array.from(new Set(tests.map(function(test){return test.status||'unknown';}))).sort();
+    var changes=Array.from(new Set(tests.map(changeValue))).sort(function(a,b){return ['new','changed','unchanged'].indexOf(a)-['new','changed','unchanged'].indexOf(b);});
+    html+='<div class="test-filters" aria-label="Filter tests">'
+      +'<label class="test-filter-group test-filter-name"><span style="font-size:.72rem;font-weight:700;color:#64748b">Test name</span>'
+      +'<input type="search" id="test-name-filter" value="'+esc(savedPrefs.testName||'')+'" placeholder="Search test names"></label>'
+      +checkboxFilter('test-filter-source',sources)
+      +checkboxFilter('test-filter-status',statuses)
+      +checkboxFilter('test-filter-change',changes)
+      +'<fieldset class="test-filter-group test-filter-time"><legend>Execution time</legend>'
+      +'<div class="test-filter-time-fields"><label>Min (seconds)<input type="number" id="test-time-min" min="0" step="0.1" value="'+esc(savedPrefs.minTime||'')+'" placeholder="Any"></label>'
+      +'<label>Max (seconds)<input type="number" id="test-time-max" min="0" step="0.1" value="'+esc(savedPrefs.maxTime||'')+'" placeholder="Any"></label></div></fieldset>'
+      +'</div>'
+      +'<div class="test-pagination" aria-label="Test table pagination">'
       +'<button type="button" id="test-page-prev" aria-label="Previous test page">Prev</button>'
       +'<span id="test-page-range"></span><span id="test-page-count"></span>'
       +'<button type="button" id="test-page-next" aria-label="Next test page">Next</button>'
@@ -849,16 +960,20 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
       +'<th aria-sort="none"><button type="button" data-sort="change" data-label="Change" aria-label="Sort by Change">Change</button></th>'
       +'</tr></thead><tbody id="all-tests-body"></tbody></table></div>';
     testsBox.innerHTML=html;
+    document.getElementById('test-page-size').value=String(testsPerPage);
+    var filterInputs=testsBox.querySelectorAll('.test-filter-source, .test-filter-status, .test-filter-change');
+    for(var i=0;i<filterInputs.length;i++){filterInputs[i].addEventListener('change',applyTestFilters);}
+    document.getElementById('test-name-filter').addEventListener('input',applyTestFilters);
+    document.getElementById('test-time-min').addEventListener('input',applyTestFilters);
+    document.getElementById('test-time-max').addEventListener('input',applyTestFilters);
     var sortButtons=testsBox.querySelectorAll('.all-tests th button');
     for(var i=0;i<sortButtons.length;i++){
       sortButtons[i].addEventListener('click',function(){
         var column=this.getAttribute('data-sort');
         sortDirection=column===sortColumn?-sortDirection:1;
         sortColumn=column;
-        currentTests.sort(function(a,b){return compareTestValues(a,b,sortColumn);});
-        currentPage=0;
         updateSortHeaders();
-        renderTestPage();
+        applyTestFilters();
       });
     }
     updateSortHeaders();
@@ -869,7 +984,7 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
       currentPage=0;
       renderTestPage();
     });
-    renderTestPage();
+    applyTestFilters(false);
   }
   function renderRun(run){
     if(!run){testsBox.innerHTML='';detail.innerHTML='';return;}
@@ -906,6 +1021,10 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
       html+='</ul>';}
     detail.innerHTML=html;
   }
+  document.getElementById('reset-dashboard-preferences').addEventListener('click',function(){
+    document.cookie=cookieName+'=; Path='+cookiePath+'; Max-Age=0; SameSite=Lax';
+    location.reload();
+  });
   picker.addEventListener('change',function(){renderRun(RUNS[parseInt(this.value,10)]);});
   renderRun(RUNS[parseInt(picker.value,10)]);
 })();
@@ -984,6 +1103,18 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
 (function(){
   var sel=document.getElementById('agg-picker');
   var box=document.getElementById('agg-detail');
+  var cookiePath=location.pathname.slice(0,location.pathname.lastIndexOf('/')+1)||'/';
+  var cookieName='testStatsPrefs_'+cookiePath.replace(/[^a-zA-Z0-9]/g,'_');
+  var prefs={};
+  var prefix=cookieName+'=',cookies=document.cookie.split(';');
+  for(var i=0;i<cookies.length;i++){
+    var item=cookies[i].trim();
+    if(item.indexOf(prefix)===0){
+      try{prefs=JSON.parse(decodeURIComponent(item.slice(prefix.length)))||{};}catch(error){prefs={};}
+      break;
+    }
+  }
+  if(['top','flaky','longest','retried'].indexOf(prefs.aggPicker)!==-1){sel.value=prefs.aggPicker;}
   function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
   function fmtDur(ms){if(!ms)return '&mdash;';if(ms<1000)return Math.round(ms)+' ms';var s=ms/1000;if(s<60)return s.toFixed(0)+'s';return Math.floor(s/60)+'m '+Math.floor(s%60)+'s';}
   function shortName(t){var p=t.split('>').map(function(x){return x.trim();}).filter(Boolean);return p.length>=2?p.slice(-2).join(' › '):(p[p.length-1]||t);}
@@ -1031,8 +1162,12 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
     box.innerHTML=html;
     highlightTests(v);
   }
-  sel.addEventListener('change',function(){render(this.value);});
-  render('top');
+  sel.addEventListener('change',function(){
+    render(this.value);
+    prefs.aggPicker=this.value;
+    document.cookie=cookieName+'='+encodeURIComponent(JSON.stringify(prefs))+'; Path='+cookiePath+'; Max-Age=31536000; SameSite=Lax';
+  });
+  render(sel.value);
 })();
 </script>
 ''')
