@@ -25,14 +25,16 @@ other site content and perform one deployment.
     stats-subdirectory: reusable-stats
     history-days: 30
     report-name: CI tests
-    dashboard-url: https://owner.github.io/repo/reusable-stats/
+    # Optional override; auto-detected from GitHub Pages configuration if omitted.
+    # dashboard-url: https://owner.github.io/repo/stats/
     detailed-statistics: "true"
 ```
 
-Set `dashboard-url` to the published URL for the dashboard to add a link to it
-in the GitHub Actions summary. This is optional because the Pages URL and
-published path depend on each project; when omitted, the summary shows counts
-without a dashboard link.
+By default, the action looks up the repository's configured GitHub Pages URL
+and links to its `stats/` dashboard in the GitHub Actions summary. The workflow
+token needs `pages: read` permission for this lookup. If Pages is not configured
+yet, the summary includes counts without a dashboard link. You can set
+`dashboard-url` explicitly to override the discovered URL.
 
 The action is test-runner agnostic when a runner can emit JUnit XML, a common
 interchange format supported by many test frameworks. Built-in parsers support
@@ -79,8 +81,8 @@ It creates/updates:
 - `<stats-subdirectory>/runs.json` — normalized run history, pruned to the
   configured rolling window and deduplicated by GitHub run number.
 - `<stats-subdirectory>/index.html` — a small static recent-run table.
-- `$GITHUB_STEP_SUMMARY` with test counts and, when `dashboard-url` is set, a
-  link to the published dashboard; plus action outputs `total`, `passed`,
+- `$GITHUB_STEP_SUMMARY` with test counts and a link to the published dashboard
+  when its Pages URL is available; plus action outputs `total`, `passed`,
   `failed`, `skipped`, and `stats-file`.
 - `stats/runs.json` and `stats/index.html` — the detailed rolling 30-day
   per-test dashboard, including average failures and flaky tests per run across
@@ -138,6 +140,7 @@ on:
 
 permissions:
   contents: read
+  pages: read
 
 jobs:
   build:

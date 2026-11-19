@@ -7,6 +7,8 @@ import os
 from pathlib import Path
 import sys
 import tempfile
+import urllib.error
+import urllib.request
 from urllib.parse import quote, urlsplit
 import xml.etree.ElementTree as ET
 
@@ -332,11 +334,59 @@ def parse_result(path, forced_format):
     fail(f"cannot infer result format for {path}; set format to junit, trx, nunit, xunit, or playwright-json")
 
 
+def configured_dashboard_url():
+    token = env("GITHUB_TOKEN").strip()
+    repository = env("GITHUB_REPOSITORY").strip()
+    if not token or not repository:
+        fail("cannot discover the GitHub Pages URL; ensure GITHUB_TOKEN and GITHUB_REPOSITORY are available")
+
+    api_url = env("GITHUB_API_URL", "https://api.github.com").rstrip("/")
+    request = urllib.request.Request(
+        f"{api_url}/repos/{quote(repository, safe='/')}/pages",
+        headers={
+            "Accept": "application/vnd.github+json",
+            "Authorization": f"Bearer {token}",
+            "X-GitHub-Api-Version": "2022-11-28",
+        },
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=10) as response:
+            pages = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        if exc.code == 404:
+            print(
+                "test-stats-gh-pages-action: GitHub Pages is not configured; "
+                "summary will omit the dashboard link.",
+                file=sys.stderr,
+            )
+            return ""
+        if exc.code == 403:
+            fail("cannot read GitHub Pages configuration; grant the workflow token pages:read permission")
+        fail(f"GitHub Pages API request failed with HTTP {exc.code}")
+    except (urllib.error.URLError, TimeoutError) as exc:
+        fail(f"could not look up GitHub Pages configuration: {exc}")
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        fail(f"GitHub Pages API returned invalid JSON: {exc}")
+
+    pages_url = pages.get("html_url") if isinstance(pages, dict) else None
+    if not isinstance(pages_url, str):
+        fail("GitHub Pages API response did not include an html_url")
+    try:
+        parsed_url = urlsplit(pages_url)
+    except ValueError:
+        fail("GitHub Pages API returned an invalid html_url")
+    if parsed_url.scheme not in ("http", "https") or not parsed_url.netloc:
+        fail("GitHub Pages API returned an invalid html_url")
+    return f"{pages_url.rstrip('/')}/stats/"
+
+
 def write_summary(name, run):
     summary = env("GITHUB_STEP_SUMMARY")
     if not summary:
         return
     dashboard_url = env("INPUT_DASHBOARD_URL").strip()
+    if not dashboard_url:
+        dashboard_url = configured_dashboard_url()
     link = ""
     if dashboard_url:
         try:

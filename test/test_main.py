@@ -126,6 +126,54 @@ class StatsActionTests(unittest.TestCase):
                     main.write_summary("CI tests", {"passed": 1, "failed": 0, "skipped": 0, "total": 1})
         self.assertEqual(exc.exception.code, 1)
 
+    def test_dashboard_url_is_discovered_from_github_pages_config(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            summary = Path(tmp) / "summary"
+            with patch.dict(os.environ, {
+                "GITHUB_STEP_SUMMARY": str(summary),
+                "GITHUB_TOKEN": "token",
+                "GITHUB_REPOSITORY": "owner/repo",
+                "GITHUB_API_URL": "https://api.github.test",
+            }, clear=True), patch.object(main.urllib.request, "urlopen") as urlopen:
+                urlopen.return_value.__enter__.return_value.read.return_value = json.dumps({
+                    "html_url": "https://owner.github.io/repo/",
+                }).encode()
+                main.write_summary("CI tests", {"passed": 1, "failed": 0, "skipped": 0, "total": 1})
+
+            self.assertIn(
+                "[View test statistics dashboard](https://owner.github.io/repo/stats/)",
+                summary.read_text(),
+            )
+            request = urlopen.call_args.args[0]
+            self.assertEqual(
+                request.full_url,
+                "https://api.github.test/repos/owner/repo/pages",
+            )
+
+    def test_missing_github_pages_config_omits_dashboard_link(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            summary = Path(tmp) / "summary"
+            with patch.dict(os.environ, {
+                "GITHUB_STEP_SUMMARY": str(summary),
+                "GITHUB_TOKEN": "token",
+                "GITHUB_REPOSITORY": "owner/repo",
+            }, clear=True), patch.object(
+                main.urllib.request,
+                "urlopen",
+                side_effect=main.urllib.error.HTTPError(
+                    "https://api.github.com/repos/owner/repo/pages",
+                    404,
+                    "Not Found",
+                    {},
+                    None,
+                ),
+            ):
+                main.write_summary("CI tests", {"passed": 1, "failed": 0, "skipped": 0, "total": 1})
+
+            contents = summary.read_text()
+            self.assertIn("1 passed", contents)
+            self.assertNotIn("View test statistics dashboard", contents)
+
     def test_junit_rejects_non_junit_xml(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "not-junit.xml"
