@@ -42,6 +42,7 @@ run_url         = "{}/{}/actions/runs/{}".format(
     os.environ.get("GITHUB_RUN_ID", "0"),
 )
 cutoff = datetime.now(timezone.utc) - timedelta(days=30)
+RUNS_SCHEMA_VERSION = 1
 
 
 def walk_suites(suite, parents, failed_tests, flaky_tests, slow_tests, all_tests, source_file):
@@ -442,10 +443,23 @@ runs_file = os.path.join(stats_dir, "runs.json")
 if os.path.exists(runs_file):
     with open(runs_file) as f:
         store = json.load(f)
+    if not isinstance(store, dict) or not isinstance(store.get("runs"), list):
+        print(f"[stats] Existing {runs_file} must contain a runs array", file=sys.stderr)
+        raise SystemExit(1)
+    if "schemaVersion" in store:
+        schema_version = store["schemaVersion"]
+        if isinstance(schema_version, bool) or not isinstance(schema_version, int) or schema_version != RUNS_SCHEMA_VERSION:
+            print(
+                f"[stats] Unsupported runs.json schemaVersion {schema_version!r}; "
+                f"expected {RUNS_SCHEMA_VERSION}",
+                file=sys.stderr,
+            )
+            raise SystemExit(1)
+    store["schemaVersion"] = RUNS_SCHEMA_VERSION
     prev_count = len(store.get("runs", []))
     print(f"[stats] Loaded existing runs.json: {prev_count} run(s) on record")
 else:
-    store = {"runs": []}
+    store = {"schemaVersion": RUNS_SCHEMA_VERSION, "runs": []}
     prev_count = 0
     print(f"[stats] No existing runs.json — starting fresh")
 
@@ -751,11 +765,13 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
                  '<button type="button" id="run-page-prev" aria-label="Newer runs" disabled>Newer</button>'
                  '<span id="run-page-range"></span>'
                  '<button type="button" id="run-page-next" aria-label="Older runs">Older</button></div>\n')
+        fh.write('<button type="button" class="test-filter-reset" id="export-runs-json">Export JSON</button>\n')
         fh.write('<button type="button" class="test-filter-reset" id="reset-dashboard-preferences">Reset filters and selections</button>\n')
         fh.write('<div id="selected-run-tests"></div>\n')
         fh.write('<div id="run-detail" style="margin-top:.875rem"></div>\n')
+        _runs_store_json = json.dumps(store).replace('</', '<\\/')
         _runs_json = json.dumps(runs).replace('</', '<\\/')
-        fh.write(f'<script>var RUNS={_runs_json};</script>\n')
+        fh.write(f'<script>var RUNS_STORE={_runs_store_json};var RUNS=RUNS_STORE.runs;</script>\n')
         fh.write('''\
 <script>
 (function(){
@@ -1142,6 +1158,17 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
   document.getElementById('reset-dashboard-preferences').addEventListener('click',function(){
     document.cookie=cookieName+'=; Path='+cookiePath+'; Max-Age=0; SameSite=Lax';
     location.reload();
+  });
+  document.getElementById('export-runs-json').addEventListener('click',function(){
+    var blob=new Blob([JSON.stringify(RUNS_STORE,null,2)],{type:'application/json;charset=utf-8'});
+    var url=URL.createObjectURL(blob);
+    var link=document.createElement('a');
+    link.href=url;
+    link.download='runs.json';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   });
   picker.addEventListener('change',function(){renderRun(RUNS[parseInt(this.value,10)]);});
   runPagePrev.addEventListener('click',function(){renderRunPage(runPage-1,-1);});

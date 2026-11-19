@@ -79,7 +79,10 @@ fail the action rather than producing success-shaped empty data.
 It creates/updates:
 
 - `<stats-subdirectory>/runs.json` — normalized run history, pruned to the
-  configured rolling window and deduplicated by GitHub run number.
+  configured rolling window and deduplicated by GitHub run number. The file
+  includes `"schemaVersion": 1`; files from earlier releases without this field
+  are treated as legacy schema version 1 and upgraded in place. Unsupported
+  schema versions fail explicitly instead of risking a silent format mismatch.
 - `<stats-subdirectory>/index.html` — a small static recent-run table.
 - `$GITHUB_STEP_SUMMARY` with test counts and a link to the published dashboard
   when its Pages URL is available; plus action outputs `total`, `passed`,
@@ -150,6 +153,11 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Serialize the complete read-update-publish cycle for this repository.
+concurrency:
+  group: gh-pages-${{ github.repository }}
+  cancel-in-progress: false
+
 permissions:
   contents: read
   pages: read
@@ -215,6 +223,17 @@ project. The first workflow run can create the `gh-pages` branch when it
 publishes, so you do not need to create the branch manually. After that run
 succeeds, open **Settings → Pages**, choose **Deploy from a branch**, then
 select `gh-pages` and the root (`/`) folder.
+
+The workflow-level `concurrency` group serializes the whole read-update-publish
+cycle, so each run restores the site after the previous run has finished
+publishing. If another workflow in the same repository also publishes to
+`gh-pages`, give it the same group name. Do not put this group only on the
+`publish` job: the site may already have been read by `build` before that job
+waits. With `cancel-in-progress: false`, a running workflow is not cancelled,
+but GitHub Actions keeps only one pending run per group; a newer run can replace
+an older pending run. If every test run must be recorded, use a durable queue or
+retry the update against the latest `gh-pages` content rather than relying on
+concurrency alone.
 
 With `force_orphan: true`, each deployment replaces the `gh-pages` branch with
 a new root commit. **The branch's previous commit history is not kept.** The

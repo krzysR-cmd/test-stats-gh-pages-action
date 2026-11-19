@@ -803,6 +803,9 @@ class DetailedStatsTests(unittest.TestCase):
             )
             self.assertIn('id="test-name-filter"', pages["columnHtml"])
             self.assertIn('id="reset-dashboard-preferences"', dashboard)
+            self.assertIn('id="export-runs-json"', dashboard)
+            self.assertIn("JSON.stringify(RUNS_STORE,null,2)", dashboard)
+            self.assertIn("link.download='runs.json'", dashboard)
             self.assertEqual(pages["noSource"]["range"], "Showing 0-0 of 0 tests")
             self.assertEqual(pages["noStatus"]["range"], "Showing 0-0 of 0 tests")
             self.assertEqual(pages["noChange"]["range"], "Showing 0-0 of 0 tests")
@@ -889,8 +892,10 @@ class DetailedStatsTests(unittest.TestCase):
                 "GITHUB_REPOSITORY": "owner/repo",
             })
             subprocess.run(["bash", str(SCRIPT)], check=True, env=env, capture_output=True, text=True)
+            store = json.loads((stats_dir / "runs.json").read_text())
             dashboard = (stats_dir / "index.html").read_text()
 
+            self.assertEqual(store["schemaVersion"], 1)
             self.assertIn('"shell_passed": 220', dashboard)
             self.assertIn("counts.total=(run.total||0)+(run.shell_passed||0)", dashboard)
             self.assertIn("counts.failed=(run.failed||0)+(run.shell_failed||0)", dashboard)
