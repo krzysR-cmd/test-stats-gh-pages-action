@@ -54,6 +54,13 @@ def walk_suites(suite, parents, failed_tests, flaky_tests, slow_tests, all_tests
         for test in spec.get("tests", []):
             status = test.get("status", "")
             test_results = test.get("results", [])
+            retries = max(0, len(test_results) - 1)
+            final_status = {
+                "expected": "passed",
+                "unexpected": "failed",
+                "flaky": "passed",
+                "skipped": "skipped",
+            }.get(status, status or "unknown")
             duration_ms = sum(result.get("duration", 0) for result in test_results)
             all_tests.append({
                 "source": "Playwright",
@@ -61,6 +68,9 @@ def walk_suites(suite, parents, failed_tests, flaky_tests, slow_tests, all_tests
                 "title": full_title,
                 "file": file_path,
                 "duration_ms": duration_ms,
+                "final_status": final_status,
+                "passed_after_retry": status == "flaky",
+                "retries": retries,
                 "status": {
                     "expected": "passed",
                     "unexpected": "failed",
@@ -88,6 +98,7 @@ def walk_suites(suite, parents, failed_tests, flaky_tests, slow_tests, all_tests
                     "title": full_title,
                     "file": file_path,
                     "attempts": len(test.get("results", [])),
+                    "retries": retries,
                 })
     for sub in suite.get("suites", []):
         walk_suites(sub, cur, failed_tests, flaky_tests, slow_tests, all_tests, source_file)
@@ -400,6 +411,8 @@ run_entry = {
     "failed":              agg["unexpected"],
     "skipped":             agg["skipped"],
     "flaky_count":         agg["flaky"],
+    "passed_after_retry_count": agg["flaky"],
+    "retry_count":         sum(test.get("retries", 0) for test in all_tests),
     "duration_ms":         agg["duration_ms"],
     "slowest_tests":       sorted(slow_tests, key=lambda x: -x["duration_ms"])[:10],
     "failed_tests":        failed_tests,
@@ -411,7 +424,8 @@ run_entry = {
     "shell_failed_tests":  shell_failed_tests,
 }
 print(f"[stats] Run #{run_number}: playwright total={run_entry['total']} passed={run_entry['passed']} "
-      f"failed={run_entry['failed']} flaky={run_entry['flaky_count']} skipped={run_entry['skipped']}")
+      f"failed={run_entry['failed']} passed_after_retry={run_entry['passed_after_retry_count']} "
+      f"retries={run_entry['retry_count']} skipped={run_entry['skipped']}")
 if failed_tests:
     print(f"[stats] Failed tests ({len(failed_tests)}):")
     for t in failed_tests:
@@ -486,6 +500,17 @@ def total_tests(run):
         + run.get("shell_passed", 0)
         + run.get("shell_failed", 0)
         + run.get("shell_skipped", 0)
+    )
+
+def retry_count(run):
+    if isinstance(run.get("retry_count"), int):
+        return run["retry_count"]
+    tests = run.get("tests", [])
+    if any("retries" in test for test in tests):
+        return sum(test.get("retries", 0) for test in tests)
+    return sum(
+        test.get("retries", max(0, test.get("attempts", 1) - 1))
+        for test in run.get("flaky_tests", [])
     )
 
 def top_failing(runs, n=10):
@@ -572,11 +597,21 @@ top_slow = sorted(slow_by_test.items(), key=lambda x: -x[1])[:5]
 
 retry_by_test = {}
 for _r in eligible:
-    for _t in _r.get("flaky_tests", []):
-        k = _t["title"]
-        retry_by_test[k] = max(retry_by_test.get(k, 0), _t.get("attempts", 1))
+    for _t in _r.get("tests", []):
+        retries = _t.get("retries", 0)
+        if retries > 0:
+            k = _t["title"]
+            retry_by_test[k] = retry_by_test.get(k, 0) + retries
+    if not any("retries" in _t for _t in _r.get("tests", [])):
+        for _t in _r.get("flaky_tests", []):
+            retries = _t.get("retries", max(0, _t.get("attempts", 1) - 1))
+            if retries > 0:
+                k = _t["title"]
+                retry_by_test[k] = retry_by_test.get(k, 0) + retries
 most_retried = sorted(retry_by_test.items(), key=lambda x: -x[1])[:5]
 
+total_retries = sum(retry_count(r) for r in eligible)
+avg_retries = round(total_retries / max(1, len(eligible)), 1)
 rate_cls = "rate-ok" if pass_rate >= 90 else ("rate-warn" if pass_rate >= 70 else "rate-bad")
 
 now_utc = datetime.now(timezone.utc)
@@ -612,8 +647,8 @@ body{{font-family:system-ui,-apple-system,Arial,sans-serif;margin:0;background:#
 .rate-ok{{background:#dcfce7;color:#15803d}}
 .rate-warn{{background:#fef9c3;color:#854d0e}}
 .rate-bad{{background:#fee2e2;color:#b91c1c}}
-.stats-row{{display:grid;grid-template-columns:repeat(4,1fr);gap:.625rem;margin-bottom:.875rem}}
-.selected-run-stats{{grid-template-columns:repeat(5,minmax(0,1fr))}}
+.stats-row{{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.625rem;margin-bottom:.875rem}}
+.selected-run-stats{{grid-template-columns:repeat(6,minmax(0,1fr))}}
 .duration-stats{{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .stat-box{{background:#f8fafc;border:1px solid #e2e8f0;border-radius:.5rem;padding:.6rem .5rem;text-align:center}}
 .stat-val{{font-size:1.15rem;font-weight:700;color:#1a1a2e;line-height:1.2}}
@@ -704,8 +739,9 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
             _status = "✓" if _fail == 0 else "✗"
             _label = (
                 f"{_status} Run #{_run['run_id']} — {_ts}Z"
-                f" — {_run.get('passed', 0) + _run.get('shell_passed', 0)}p / {_fail}f"
-                f" / {_run.get('flaky_count', 0)} flaky"
+                f" — {_run.get('passed', 0) + _run.get('flaky_count', 0) + _run.get('shell_passed', 0)}p / {_fail}f"
+                f" / {_run.get('passed_after_retry_count', _run.get('flaky_count', 0))} passed after retry"
+                f" / {retry_count(_run)} retries"
                 f" / {_run.get('skipped', 0) + _run.get('shell_skipped', 0)} skipped"
             )
             _selected = " selected" if _orig_idx == len(runs) - 1 else ""
@@ -782,6 +818,25 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
     var ranks={failed:0,flaky:1,passed:2,skipped:3};
     return Object.prototype.hasOwnProperty.call(ranks,status)?ranks[status]:4;
   }
+  function finalStatus(test){
+    return test.final_status||(test.status==='flaky'?'passed':(test.status||'unknown'));
+  }
+  function passedAfterRetry(test){
+    return test.passed_after_retry===true||(!Object.prototype.hasOwnProperty.call(test,'passed_after_retry')&&test.status==='flaky');
+  }
+  function retryCount(test){
+    return Number(test.retries)||0;
+  }
+  function runRetryCount(run){
+    if(typeof run.retry_count==='number'){return run.retry_count;}
+    var tests=run.tests||[];
+    if(tests.some(function(test){return Object.prototype.hasOwnProperty.call(test,'retries');})){
+      return tests.reduce(function(total,test){return total+retryCount(test);},0);
+    }
+    return (run.flaky_tests||[]).reduce(function(total,test){
+      return total+Number(test.retries!==undefined?test.retries:Math.max(0,(test.attempts||1)-1));
+    },0);
+  }
   function sourceLabel(test){
     return test.source_file||(['JUnit','NUnit','xUnit','VSTest'].includes(test.source)?'Additional':test.source||'');
   }
@@ -849,7 +904,7 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
         ||(timeFilterValue==='slowest10'&&duration>=timeThresholds.slowest10);
       return (!name||(test.title||'').toLowerCase().indexOf(name)!==-1)
         &&sources.indexOf(sourceLabel(test))!==-1
-        &&statuses.indexOf(test.status||'unknown')!==-1
+        &&statuses.indexOf(finalStatus(test))!==-1
         &&changes.indexOf(changeValue(test))!==-1
         &&matchesTime;
     }).sort(function(a,b){return compareTestValues(a,b,sortColumn);});
@@ -877,8 +932,8 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
       left=sourceLabel(a);
       right=sourceLabel(b);
     }else if(column==='status'){
-      left=statusRank(a.status||'unknown');
-      right=statusRank(b.status||'unknown');
+      left=statusRank(finalStatus(a));
+      right=statusRank(finalStatus(b));
     }else if(column==='duration'){
       left=Number(a.duration_ms)||0;
       right=Number(b.duration_ms)||0;
@@ -907,7 +962,7 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
     currentPage=Math.min(Math.max(0,currentPage),pageCount-1);
     var start=currentPage*testsPerPage,end=Math.min(start+testsPerPage,currentTests.length),rows='';
     for(var i=start;i<end;i++){
-      var test=currentTests[i],title=test.title||'',status=test.status||'unknown';
+      var test=currentTests[i],title=test.title||'',status=finalStatus(test);
       var statusClass={passed:'status-passed',failed:'status-failed',flaky:'status-flaky',skipped:'status-skipped'}[status]||'';
       var change='—';
       if(test.change==='new'){
@@ -915,11 +970,13 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
       }else if(test.change==='changed'){
         change='<span class="change-badge change-updated">'+esc(test.previous_status||'unknown')+' &rarr; '+esc(status)+'</span>';
       }
+      var passedAfterRetryLabel=test.source==='Playwright'?(passedAfterRetry(test)?'Yes':'No'):'—';
       rows+='<tr data-test-title="'+esc(title)+'" data-test-status="'+esc(status)+'"><td title="'+esc(title)+'">'+esc(clip(shortName(title),90))+'</td>'
         +'<td>'+esc(sourceLabel(test))+'</td><td><span class="status-badge '+statusClass+'">'+esc(status)+'</span></td>'
+        +'<td>'+passedAfterRetryLabel+'</td><td>'+retryCount(test)+'</td>'
         +'<td>'+fmtTestDur(test.duration_ms)+'</td><td>'+change+'</td></tr>';
     }
-    if(!currentTests.length){rows='<tr><td class="test-filter-empty" colspan="5">No tests match these filters.</td></tr>';}
+    if(!currentTests.length){rows='<tr><td class="test-filter-empty" colspan="7">No tests match these filters.</td></tr>';}
     document.getElementById('all-tests-body').innerHTML=rows;
     document.getElementById('test-page-range').textContent='Showing '+(currentTests.length?start+1:0)+'-'+end+' of '+currentTests.length+' tests';
     document.getElementById('test-page-count').textContent='Page '+(currentPage+1)+' of '+pageCount;
@@ -933,24 +990,29 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
     var tests=run.tests||[];
     allTests=tests.slice();
     currentTests=allTests.slice().sort(function(a,b){return compareTestValues(a,b,sortColumn);});
-    var counts={total:0,passed:0,failed:0,flaky:0,skipped:0};
+    var counts={total:0,passed:0,failed:0,flaky:0,retries:0,skipped:0};
     if(tests.length){
       counts.total=tests.length;
       for(var i=0;i<tests.length;i++){
-        if(Object.prototype.hasOwnProperty.call(counts,tests[i].status)){counts[tests[i].status]++;}
+        var status=finalStatus(tests[i]);
+        if(Object.prototype.hasOwnProperty.call(counts,status)){counts[status]++;}
+        if(passedAfterRetry(tests[i])){counts.flaky++;}
+        counts.retries+=retryCount(tests[i]);
       }
     }else{
       counts.total=(run.total||0)+(run.shell_passed||0)+(run.shell_failed||0)+(run.shell_skipped||0);
-      counts.passed=(run.passed||0)+(run.shell_passed||0);
+      counts.passed=(run.passed||0)+(run.flaky_count||0)+(run.shell_passed||0);
       counts.failed=(run.failed||0)+(run.shell_failed||0);
       counts.flaky=run.flaky_count||0;
+      counts.retries=runRetryCount(run);
       counts.skipped=(run.skipped||0)+(run.shell_skipped||0);
     }
     var html='<div class="stats-row selected-run-stats" style="margin:.6rem 0">'
       +'<div class="stat-box"><div class="stat-val">'+counts.total+'</div><div class="stat-lbl">Tests</div></div>'
       +'<div class="stat-box"><div class="stat-val">'+counts.passed+'</div><div class="stat-lbl">Passed</div></div>'
       +'<div class="stat-box stat-fail"><div class="stat-val">'+counts.failed+'</div><div class="stat-lbl">Failed</div></div>'
-      +'<div class="stat-box stat-flaky"><div class="stat-val">'+counts.flaky+'</div><div class="stat-lbl">Flaky</div></div>'
+      +'<div class="stat-box stat-flaky"><div class="stat-val">'+counts.flaky+'</div><div class="stat-lbl">Passed after retry</div></div>'
+      +'<div class="stat-box"><div class="stat-val">'+counts.retries+'</div><div class="stat-lbl">Retries</div></div>'
       +'<div class="stat-box"><div class="stat-val">'+counts.skipped+'</div><div class="stat-lbl">Skipped</div></div>'
       +'</div>';
     if(run.test_comparison_available){
@@ -966,7 +1028,7 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
       return;
     }
     var sources=Array.from(new Set(tests.map(sourceLabel))).sort(function(a,b){return a.localeCompare(b);});
-    var statuses=Array.from(new Set(tests.map(function(test){return test.status||'unknown';}))).sort();
+    var statuses=Array.from(new Set(tests.map(finalStatus))).sort();
     var changes=Array.from(new Set(tests.map(changeValue))).sort(function(a,b){return ['new','changed','unchanged'].indexOf(a)-['new','changed','unchanged'].indexOf(b);});
     html+='<div class="test-pagination" aria-label="Test table pagination">'
       +'<button type="button" id="test-page-prev" aria-label="Previous test page">Prev</button>'
@@ -979,8 +1041,9 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
       +'<input type="search" class="column-filter-name" id="test-name-filter" value="'+esc(savedPrefs.testName||'')+'" placeholder="Search"></th>'
       +'<th aria-sort="none"><button type="button" data-sort="source" data-label="Source" aria-label="Sort by Source">Source</button>'
       +checkboxFilter('test-filter-source',sources)+'</th>'
-      +'<th aria-sort="none"><button type="button" data-sort="status" data-label="Status" aria-label="Sort by Status">Status</button>'
+      +'<th aria-sort="none"><button type="button" data-sort="status" data-label="Final status" aria-label="Sort by Final status">Final status</button>'
       +checkboxFilter('test-filter-status',statuses)+'</th>'
+      +'<th>Passed after retry</th><th>Retries</th>'
       +'<th aria-sort="none"><button type="button" data-sort="duration" data-label="Execution time" aria-label="Sort by Execution time">Execution time</button>'
       +timeFilter(tests)+'</th>'
       +'<th aria-sort="none"><button type="button" data-sort="change" data-label="Change" aria-label="Sort by Change">Change</button>'
@@ -1043,7 +1106,7 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
     }else if(!flaky.length){html+='<p style="font-size:.8rem;color:#15803d;margin:.2rem 0">None ✓</p>';}
     else{html+='<ul class="flaky-list">';
       for(var i=0;i<flaky.length;i++){var t=flaky[i],s=clip(shortName(t.title),70);
-        html+='<li title="'+esc(t.title)+'">'+esc(s)+' <strong>('+t.attempts+' attempts)</strong></li>';}
+        html+='<li title="'+esc(t.title)+'">'+esc(s)+' <strong>('+Number(t.retries!==undefined?t.retries:Math.max(0,(t.attempts||1)-1))+' retries)</strong></li>';}
       html+='</ul>';}
     detail.innerHTML=html;
   }
@@ -1052,8 +1115,9 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
     var failed=(run.failed||0)+(run.shell_failed||0);
     var status=failed===0?'✓':'✗';
     return status+' Run #'+run.run_id+' — '+ts+'Z'
-      +' — '+((run.passed||0)+(run.shell_passed||0))+'p / '+failed+'f'
-      +' / '+(run.flaky_count||0)+' flaky'
+      +' — '+((run.passed||0)+(run.flaky_count||0)+(run.shell_passed||0))+'p / '+failed+'f'
+      +' / '+(run.passed_after_retry_count||run.flaky_count||0)+' passed after retry'
+      +' / '+runRetryCount(run)+' retries'
       +' / '+((run.skipped||0)+(run.shell_skipped||0))+' skipped';
   }
   function renderRunPage(page,selectedIndex){
@@ -1094,7 +1158,8 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
         fh.write(f'<div class="stat-box"><div class="stat-val">{avg_total}</div><div class="stat-lbl">Avg tests/run</div></div>\n')
         fh.write(f'<div class="stat-box"><div class="stat-val">{avg_passed}</div><div class="stat-lbl">Avg passed/run</div></div>\n')
         fh.write(f'<div class="stat-box stat-fail"><div class="stat-val">{avg_failed:g}</div><div class="stat-lbl">Avg failures/run</div></div>\n')
-        fh.write(f'<div class="stat-box stat-flaky"><div class="stat-val">{avg_flaky:g}</div><div class="stat-lbl">Avg flaky/run</div></div>\n')
+        fh.write(f'<div class="stat-box stat-flaky"><div class="stat-val">{avg_flaky:g}</div><div class="stat-lbl">Avg passed after retry/run</div></div>\n')
+        fh.write(f'<div class="stat-box"><div class="stat-val">{avg_retries:g}</div><div class="stat-lbl">Avg retries/run</div></div>\n')
         fh.write('</div>\n')
         if any(durations):
             fh.write('<div class="section-lbl">Execution time</div>\n')
@@ -1130,7 +1195,9 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
             label = (
                 f"Run #{run['run_id']}{dur_label} — "
                 f"{run.get('passed', 0) + run.get('shell_passed', 0)} passed / "
-                f"{pw_failed + sh_failed} failed / {pw_flaky} flaky / "
+                f"{pw_failed + sh_failed} failed / "
+                f"{run.get('passed_after_retry_count', pw_flaky)} passed after retry / "
+                f"{retry_count(run)} retries / "
                 f"{run.get('skipped', 0) + run.get('shell_skipped', 0)} skipped"
             )
             fh.write(
@@ -1210,7 +1277,7 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
     }else if(v==='retried'){
       d=AGG.retried;
       if(!d.length){html='<p style="font-size:.8rem;color:#15803d;margin:.25rem 0">No retries recorded ✓</p>';}
-      else{html='<div class="table-scroll"><table><tr><th>Test</th><th style="width:5.5rem">Max retries</th></tr>';
+      else{html='<div class="table-scroll"><table><tr><th>Test</th><th style="width:5.5rem">Retries</th></tr>';
         for(var i=0;i<d.length;i++){var t=d[i],s=clip(shortName(t[0]),65);
           html+='<tr><td title="'+esc(t[0])+'">'+esc(s)+'</td><td style="color:#d97706">'+t[1]+'</td></tr>';}
         html+='</table></div>';}

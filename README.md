@@ -116,8 +116,10 @@ It creates/updates:
   Detailed statistics are enabled by default and can be disabled with
   `detailed-statistics: "false"`.
 
-For Playwright-format JSON, tests that pass after retries count as passed and
-are also exposed separately as `flaky_count` in the normalized run record.
+For Playwright-format JSON, retry successes count as passed and are reported
+separately as passed after retry. The detailed dashboard records each test's
+final status and retry count, and reports total retries separately from the
+number of tests that passed after retry.
 JUnit XML, VSTest TRX, NUnit 2/3 XML, and xUnit.net XML results contribute to
 the normalized results and summary. The detailed dashboard can include
 Playwright-format JSON and optional JUnit, VSTest, NUnit, or xUnit XML reports;

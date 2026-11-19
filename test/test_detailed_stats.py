@@ -57,9 +57,10 @@ class DetailedStatsTests(unittest.TestCase):
             )
             self.assertIn(
                 '<div class="stat-box stat-flaky"><div class="stat-val">1.5</div>'
-                '<div class="stat-lbl">Avg flaky/run</div></div>',
+                '<div class="stat-lbl">Avg passed after retry/run</div></div>',
                 dashboard,
             )
+            self.assertIn("Avg retries/run", dashboard)
             self.assertNotIn("Total failures", dashboard)
             self.assertNotIn("Total flaky", dashboard)
 
@@ -494,7 +495,10 @@ class DetailedStatsTests(unittest.TestCase):
                             "file": "tests/example.spec.js",
                             "tests": [{
                                 "status": "unexpected",
-                                "results": [{"duration": 300, "errors": [{"message": "failure detail"}]}],
+                                "results": [
+                                    {"duration": 0},
+                                    {"duration": 300, "errors": [{"message": "failure detail"}]},
+                                ],
                             }],
                         },
                         {
@@ -540,12 +544,25 @@ class DetailedStatsTests(unittest.TestCase):
             dashboard = (site / "stats" / "index.html").read_text()
 
             self.assertEqual((run["total"], run["passed"], run["failed"], run["skipped"]), (5, 2, 1, 1))
+            self.assertEqual((run["passed_after_retry_count"], run["retry_count"]), (1, 2))
             self.assertEqual((run["shell_passed"], run["shell_failed"], run["shell_skipped"]), (1, 1, 1))
             self.assertIn("failure detail", run["failed_tests"][0]["error"])
             playwright_tests = {test["title"]: test for test in run["tests"] if test["source"] == "Playwright"}
             self.assertEqual(playwright_tests["suite > fails"]["duration_ms"], 300)
             self.assertEqual(playwright_tests["suite > fails"]["source_file"], "playwright.json")
             self.assertEqual(playwright_tests["suite > retries"]["duration_ms"], 900)
+            self.assertEqual(
+                (playwright_tests["suite > fails"]["final_status"],
+                 playwright_tests["suite > fails"]["passed_after_retry"],
+                 playwright_tests["suite > fails"]["retries"]),
+                ("failed", False, 1),
+            )
+            self.assertEqual(
+                (playwright_tests["suite > retries"]["final_status"],
+                 playwright_tests["suite > retries"]["passed_after_retry"],
+                 playwright_tests["suite > retries"]["retries"]),
+                ("passed", True, 1),
+            )
             junit_tests = {test["title"]: test for test in run["tests"] if test["source"] == "JUnit"}
             self.assertEqual(junit_tests["syntax > pass"]["duration_ms"], 125)
             self.assertEqual(junit_tests["syntax > pass"]["source_file"], "shell.xml")
@@ -561,6 +578,9 @@ class DetailedStatsTests(unittest.TestCase):
                 2,
             )
             self.assertIn('"flaky": [["suite > retries", 1]]', dashboard)
+            self.assertIn("Passed after retry</th>", dashboard)
+            self.assertIn("Retries</th>", dashboard)
+            self.assertIn("passed_after_retry_count", dashboard)
             self.assertIn("else if(v==='flaky')", dashboard)
             self.assertIn("else if(v==='longest')", dashboard)
             self.assertIn("else if(v==='retried')", dashboard)
