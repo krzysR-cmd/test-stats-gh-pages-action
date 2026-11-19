@@ -686,6 +686,23 @@ td:last-child{{text-align:right;font-weight:700;color:#dc2626;white-space:nowrap
 .all-tests td:last-child{{text-align:left;font-weight:400;color:#374151;white-space:normal}}
 .all-tests th button{{border:0;background:transparent;color:inherit;font:inherit;letter-spacing:inherit;text-transform:inherit;padding:0;cursor:pointer}}
 .all-tests th button:hover{{color:#475569}}
+.test-detail-trigger{{border:0;background:transparent;padding:0;color:#2563eb;font:inherit;text-align:left;cursor:pointer}}
+.test-detail-trigger:hover{{text-decoration:underline}}
+.test-detail{{margin-top:.75rem;border:1px solid #cbd5e1;border-radius:.625rem;background:#fff;padding:1rem}}
+.test-detail-header{{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem}}
+.test-detail-close{{border:1px solid #cbd5e1;border-radius:.375rem;background:#fff;color:#334155;padding:.25rem .55rem;cursor:pointer}}
+.test-detail-title{{font-weight:700;overflow-wrap:anywhere}}
+.test-detail-summary{{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.625rem;margin:.875rem 0}}
+.test-detail-summary-item{{background:#f8fafc;border:1px solid #e2e8f0;border-radius:.5rem;padding:.6rem}}
+.test-detail-summary-item strong{{display:block;font-size:.85rem}}
+.test-detail-summary-item span{{display:block;font-size:.68rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-top:.15rem}}
+.test-timeline{{display:flex;align-items:center;gap:.25rem;margin:.5rem 0 1rem;min-height:1.75rem}}
+.test-timeline a{{width:1.25rem;height:1.25rem;border-radius:.25rem;border:1px solid rgba(0,0,0,.12);display:block}}
+.test-timeline-passed{{background:#22c55e}}
+.test-timeline-failed{{background:#ef4444}}
+.test-timeline-skipped{{background:#94a3b8}}
+.test-timeline-flaky{{background:#eab308}}
+.test-detail-table td:last-child{{text-align:left;font-weight:400;color:#374151}}
 .comparison-note{{font-size:.78rem;color:#64748b;margin:.25rem 0 .5rem}}
 .status-badge,.change-badge{{display:inline-block;border-radius:999px;padding:.1rem .45rem;font-size:.7rem;font-weight:700;white-space:nowrap}}
 .status-passed{{background:#dcfce7;color:#15803d}}
@@ -768,6 +785,7 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
         fh.write('<button type="button" class="test-filter-reset" id="export-runs-json">Export JSON</button>\n')
         fh.write('<button type="button" class="test-filter-reset" id="reset-dashboard-preferences">Reset filters and selections</button>\n')
         fh.write('<div id="selected-run-tests"></div>\n')
+        fh.write('<div id="test-detail" aria-live="polite"></div>\n')
         fh.write('<div id="run-detail" style="margin-top:.875rem"></div>\n')
         _runs_store_json = json.dumps(store).replace('</', '<\\/')
         _runs_json = json.dumps(runs).replace('</', '<\\/')
@@ -842,6 +860,125 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
   }
   function retryCount(test){
     return Number(test.retries)||0;
+  }
+  function testIdentity(test){
+    return (test.source||'')+'\\u0000'+(test.file||'')+'\\u0000'+(test.title||'');
+  }
+  function getTestExecutions(test){
+    var identity=testIdentity(test);
+    var executions=[];
+    for(var r=RUNS.length-1;r>=0&&executions.length<20;r--){
+      var run=RUNS[r];
+      var match=null;
+      var tests=run.tests||[];
+      for(var i=0;i<tests.length;i++){
+        if(testIdentity(tests[i])===identity){
+          match=tests[i];
+          break;
+        }
+      }
+      if(!match){
+        var failureLists=(run.failed_tests||[]).concat(run.shell_failed_tests||[]);
+        var failure=null;
+        for(var f=0;f<failureLists.length;f++){
+          if(failureLists[f].title===test.title){
+            failure=failureLists[f];
+            break;
+          }
+        }
+        var flakyMatch=null;
+        for(var k=0;k<(run.flaky_tests||[]).length;k++){
+          if(run.flaky_tests[k].title===test.title){flakyMatch=run.flaky_tests[k];break;}
+        }
+        if(failure){
+          match={status:'failed',duration_ms:0,retries:0,error:failure.error||''};
+        }else if(flakyMatch){
+          match={status:'flaky',duration_ms:test.duration_ms||0,retries:Number(flakyMatch.retries!==undefined?flakyMatch.retries:Math.max(0,(flakyMatch.attempts||1)-1))||0};
+        }else{
+          continue;
+        }
+      }
+      var status=finalStatus(match);
+      var error='';
+      var failureLists=(run.failed_tests||[]).concat(run.shell_failed_tests||[]);
+      for(var m=0;m<failureLists.length;m++){
+        if(failureLists[m].title===test.title){
+          error=failureLists[m].error||'';
+          break;
+        }
+      }
+      executions.push({
+        run_id:run.run_id,
+        run_url:run.run_url||'',
+        timestamp:run.timestamp||'',
+        status:status,
+        duration_ms:Number(match.duration_ms)||0,
+        retries:retryCount(match),
+        error:error
+      });
+    }
+    return executions;
+  }
+  function openTestDetail(test){
+    var detail=document.getElementById('test-detail');
+    if(!detail){return;}
+    var executions=getTestExecutions(test);
+    var firstFailure=null,lastSuccess=null,totalRetries=0;
+    for(var i=0;i<executions.length;i++){
+      var execution=executions[i];
+      totalRetries+=execution.retries;
+      if(execution.status==='failed'){
+        if(!firstFailure||execution.timestamp<firstFailure){firstFailure=execution.timestamp;}
+      }
+      if(execution.status==='passed'||execution.status==='flaky'){
+        if(!lastSuccess){lastSuccess=execution.timestamp;}
+      }
+    }
+    var latest=executions[0]||null;
+    var timeline='';
+    for(var i=executions.length-1;i>=0;i--){
+      var execution=executions[i];
+      var statusClass=execution.status==='passed'?'test-timeline-passed'
+        :(execution.status==='failed'?'test-timeline-failed'
+        :(execution.status==='flaky'?'test-timeline-flaky':'test-timeline-skipped'));
+      var label=esc((execution.timestamp||'').replace('T',' ').slice(0,16)+' — '+execution.status+' — Run #'+execution.run_id);
+      timeline+=execution.run_url
+        ?'<a class="'+statusClass+'" href="'+esc(execution.run_url)+'" target="_blank" rel="noopener" title="'+label+'"></a>'
+        :'<span class="'+statusClass+'" title="'+label+'"></span>';
+    }
+    var failureRows='';
+    for(var i=0;i<executions.length;i++){
+      var execution=executions[i];
+      if(execution.status==='failed'){
+        failureRows+='<tr><td>'+esc(execution.timestamp.replace('T',' ').slice(0,16))+'</td>'
+          +'<td>'+esc(execution.run_id)+'</td>'
+          +'<td>'+esc(execution.error||'No failure message provided.')+'</td>'
+          +(execution.run_url?'<td><a href="'+esc(execution.run_url)+'" target="_blank" rel="noopener">Open run ↗</a></td>':'<td>&mdash;</td>')+'</tr>';
+      }
+    }
+    if(!failureRows){failureRows='<tr><td colspan="4">No failure messages in the last 20 executions.</td></tr>';}
+    var executionRows='';
+    for(var i=0;i<executions.length;i++){
+      var execution=executions[i];
+      executionRows+='<tr><td>'+esc(execution.timestamp.replace('T',' ').slice(0,16))+'</td>'
+        +(execution.run_url?'<td><a href="'+esc(execution.run_url)+'" target="_blank" rel="noopener">#'+esc(execution.run_id)+' ↗</a></td>':'<td>#'+esc(execution.run_id)+'</td>')
+        +'<td>'+esc(execution.status)+'</td><td>'+fmtTestDur(execution.duration_ms)+'</td><td>'+execution.retries+'</td></tr>';
+    }
+    if(!executionRows){executionRows='<tr><td colspan="5">No individual executions were saved.</td></tr>';}
+    detail.innerHTML='<div class="test-detail">'
+      +'<div class="test-detail-header"><div><div class="section-lbl">Test detail</div><div class="test-detail-title">'+esc(test.title||'unnamed')+'</div></div>'
+      +'<button type="button" class="test-detail-close" aria-label="Close test detail">Close</button></div>'
+      +'<div class="test-detail-summary">'
+      +'<div class="test-detail-summary-item"><strong>'+esc(firstFailure?(firstFailure.replace('T',' ').slice(0,16)+' UTC'):'&mdash;')+'</strong><span>First failure date</span></div>'
+      +'<div class="test-detail-summary-item"><strong>'+esc(lastSuccess?(lastSuccess.replace('T',' ').slice(0,16)+' UTC'):'&mdash;')+'</strong><span>Last successful execution</span></div>'
+      +'<div class="test-detail-summary-item"><strong>'+totalRetries+'</strong><span>Retry count (last 20)</span></div>'
+      +'</div>'
+      +'<div class="section-lbl">Pass/fail timeline</div><div class="test-timeline" aria-label="Pass/fail timeline">'+timeline+'</div>'
+      +'<div class="section-lbl">Last 20 executions</div><div class="table-scroll"><table class="test-detail-table"><thead><tr><th>Timestamp</th><th>GitHub Actions run</th><th>Status</th><th>Execution duration</th><th>Retry count</th></tr></thead><tbody>'+executionRows+'</tbody></table></div>'
+      +'<div class="section-lbl">Failure messages</div><div class="table-scroll"><table class="test-detail-table"><thead><tr><th>Timestamp</th><th>Run</th><th>Failure message</th><th>Link</th></tr></thead><tbody>'+failureRows+'</tbody></table></div>'
+      +'</div>';
+    detail.querySelector('.test-detail-close').addEventListener('click',function(){detail.innerHTML='';});
+    detail.scrollIntoView({behavior:'smooth',block:'nearest'});
   }
   function runRetryCount(run){
     if(typeof run.retry_count==='number'){return run.retry_count;}
@@ -987,13 +1124,21 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
         change='<span class="change-badge change-updated">'+esc(test.previous_status||'unknown')+' &rarr; '+esc(status)+'</span>';
       }
       var passedAfterRetryLabel=test.source==='Playwright'?(passedAfterRetry(test)?'Yes':'No'):'—';
-      rows+='<tr data-test-title="'+esc(title)+'" data-test-status="'+esc(status)+'"><td title="'+esc(title)+'">'+esc(clip(shortName(title),90))+'</td>'
+      rows+='<tr data-test-title="'+esc(title)+'" data-test-status="'+esc(status)+'"><td title="'+esc(title)+'">'
+        +'<button type="button" class="test-detail-trigger" data-test-index="'+i+'" aria-label="Open details for '+esc(title)+'">'+esc(clip(shortName(title),90))+'</button></td>'
         +'<td>'+esc(sourceLabel(test))+'</td><td><span class="status-badge '+statusClass+'">'+esc(status)+'</span></td>'
         +'<td>'+passedAfterRetryLabel+'</td><td>'+retryCount(test)+'</td>'
         +'<td>'+fmtTestDur(test.duration_ms)+'</td><td>'+change+'</td></tr>';
     }
     if(!currentTests.length){rows='<tr><td class="test-filter-empty" colspan="7">No tests match these filters.</td></tr>';}
     document.getElementById('all-tests-body').innerHTML=rows;
+    var detailTriggers=document.querySelectorAll('.test-detail-trigger');
+    for(var t=0;t<detailTriggers.length;t++){
+      detailTriggers[t].addEventListener('click',function(){
+        var testIndex=Number(this.getAttribute('data-test-index'));
+        if(currentTests[testIndex]){openTestDetail(currentTests[testIndex]);}
+      });
+    }
     document.getElementById('test-page-range').textContent='Showing '+(currentTests.length?start+1:0)+'-'+end+' of '+currentTests.length+' tests';
     document.getElementById('test-page-count').textContent='Page '+(currentPage+1)+' of '+pageCount;
     document.getElementById('test-page-prev').disabled=currentPage===0;

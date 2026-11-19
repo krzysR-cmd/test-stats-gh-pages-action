@@ -115,7 +115,10 @@ It creates/updates:
   failing Test trends view. Selecting Top failing tests highlights every failed
   test in the selected run in yellow; the trend list remains limited to the top
   five across the history. Failures seen in only some runs are included in the
-  Flaky tests trend.
+  Flaky tests trend. Clicking a test name opens its detail view with up to 20
+  executions, a pass/fail timeline, failure messages, execution duration, retry
+  count, first failure date, last successful execution, and links to the
+  original GitHub Actions runs.
   Detailed statistics are enabled by default and can be disabled with
   `detailed-statistics: "false"`.
 

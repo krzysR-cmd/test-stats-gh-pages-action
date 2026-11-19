@@ -12,6 +12,67 @@ SCRIPT = Path(__file__).parents[1] / "src" / "update-stats.sh"
 
 
 class DetailedStatsTests(unittest.TestCase):
+    def test_test_rows_open_detail_with_execution_history(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            results = root / "results"
+            results.mkdir()
+            stats = root / "site" / "stats"
+            stats.mkdir(parents=True)
+            now = dt.datetime.now(dt.timezone.utc)
+            prior = []
+            for number in range(1, 22):
+                prior.append({
+                    "run_id": str(number),
+                    "run_url": f"https://github.com/owner/repo/actions/runs/{number}",
+                    "timestamp": (now - dt.timedelta(hours=22-number)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "total": 1,
+                    "passed": 0 if number in (3, 8) else 1,
+                    "failed": 1 if number in (3, 8) else 0,
+                    "skipped": 0,
+                    "flaky_count": 0,
+                    "tests": [{
+                        "source": "JUnit",
+                        "source_file": "shell.xml",
+                        "title": "suite > flaky-test",
+                        "file": "suite",
+                        "duration_ms": 100 + number,
+                        "status": "failed" if number in (3, 8) else "passed",
+                    }],
+                    "failed_tests": [],
+                    "shell_failed_tests": (
+                        [{"title": "suite > flaky-test", "error": "historical failure"}]
+                        if number in (3, 8) else []
+                    ),
+                })
+            (stats / "runs.json").write_text(json.dumps({"runs": prior}))
+            (root / "shell.xml").write_text(
+                '<testsuite name="suite"><testcase classname="suite" name="flaky-test"/></testsuite>'
+            )
+            env = os.environ.copy()
+            env.update({
+                "RESULTS_DIR": str(results),
+                "SITE_DIR": str(root / "site"),
+                "SHELL_TESTS_XML": str(root / "shell.xml"),
+                "GITHUB_RUN_NUMBER": "22",
+                "GITHUB_RUN_ID": "run-22",
+                "GITHUB_SERVER_URL": "https://github.com",
+                "GITHUB_REPOSITORY": "owner/repo",
+            })
+            subprocess.run(["bash", str(SCRIPT)], check=True, env=env, capture_output=True, text=True)
+
+            dashboard = (stats / "index.html").read_text()
+            self.assertIn("test-detail-trigger", dashboard)
+            self.assertIn("openTestDetail(currentTests[testIndex])", dashboard)
+            self.assertIn("function getTestExecutions(test)", dashboard)
+            self.assertIn("Last 20 executions", dashboard)
+            self.assertIn("Pass/fail timeline", dashboard)
+            self.assertIn("Failure messages", dashboard)
+            self.assertIn("Execution duration", dashboard)
+            self.assertIn("Retry count", dashboard)
+            self.assertIn("First failure date", dashboard)
+            self.assertIn("Last successful execution", dashboard)
+            self.assertIn("GitHub Actions run", dashboard)
     def test_dashboard_shows_average_failures_and_flaky_tests_per_run(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
