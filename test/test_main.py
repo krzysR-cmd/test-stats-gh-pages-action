@@ -216,6 +216,7 @@ class StatsActionTests(unittest.TestCase):
             with patch.dict(os.environ, env, clear=True):
                 main.main()
             stored = json.loads(runs_path.read_text())
+            self.assertEqual(stored["schemaVersion"], 1)
             self.assertEqual([item["run_id"] for item in stored["runs"]], ["recent", "42"])
             self.assertTrue((runs_path.parent / "index.html").is_file())
             self.assertIn("passed**", summary.read_text())
@@ -246,11 +247,31 @@ class StatsActionTests(unittest.TestCase):
             }
             with patch.dict(os.environ, env, clear=True):
                 main.main()
-            run = json.loads(runs_path.read_text())["runs"][0]
+            stored = json.loads(runs_path.read_text())
+            run = stored["runs"][0]
+            self.assertEqual(stored["schemaVersion"], 1)
             self.assertEqual(
                 (run["total"], run["passed"], run["failed"], run["skipped"], run["flaky_count"]),
                 (6, 4, 1, 1, 1),
             )
+
+    def test_action_rejects_unsupported_runs_schema_version(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            results = root / "junit.xml"
+            results.write_text('<testsuite><testcase name="ok"/></testsuite>')
+            runs_path = root / "site" / "stats" / "runs.json"
+            runs_path.parent.mkdir(parents=True)
+            runs_path.write_text(json.dumps({"schemaVersion": 2, "runs": []}))
+            env = {
+                "INPUT_RESULT_FILES": str(results),
+                "INPUT_FORMAT": "auto",
+                "INPUT_SITE_DIRECTORY": str(root / "site"),
+            }
+            with patch.dict(os.environ, env, clear=True):
+                with self.assertRaises(SystemExit) as exc:
+                    main.main()
+        self.assertEqual(exc.exception.code, 1)
 
 
 if __name__ == "__main__":

@@ -42,6 +42,7 @@ run_url         = "{}/{}/actions/runs/{}".format(
     os.environ.get("GITHUB_RUN_ID", "0"),
 )
 cutoff = datetime.now(timezone.utc) - timedelta(days=30)
+RUNS_SCHEMA_VERSION = 1
 
 
 def walk_suites(suite, parents, failed_tests, flaky_tests, slow_tests, all_tests, source_file):
@@ -54,6 +55,13 @@ def walk_suites(suite, parents, failed_tests, flaky_tests, slow_tests, all_tests
         for test in spec.get("tests", []):
             status = test.get("status", "")
             test_results = test.get("results", [])
+            retries = max(0, len(test_results) - 1)
+            final_status = {
+                "expected": "passed",
+                "unexpected": "failed",
+                "flaky": "passed",
+                "skipped": "skipped",
+            }.get(status, status or "unknown")
             duration_ms = sum(result.get("duration", 0) for result in test_results)
             all_tests.append({
                 "source": "Playwright",
@@ -61,6 +69,9 @@ def walk_suites(suite, parents, failed_tests, flaky_tests, slow_tests, all_tests
                 "title": full_title,
                 "file": file_path,
                 "duration_ms": duration_ms,
+                "final_status": final_status,
+                "passed_after_retry": status == "flaky",
+                "retries": retries,
                 "status": {
                     "expected": "passed",
                     "unexpected": "failed",
@@ -88,6 +99,7 @@ def walk_suites(suite, parents, failed_tests, flaky_tests, slow_tests, all_tests
                     "title": full_title,
                     "file": file_path,
                     "attempts": len(test.get("results", [])),
+                    "retries": retries,
                 })
     for sub in suite.get("suites", []):
         walk_suites(sub, cur, failed_tests, flaky_tests, slow_tests, all_tests, source_file)
@@ -400,6 +412,8 @@ run_entry = {
     "failed":              agg["unexpected"],
     "skipped":             agg["skipped"],
     "flaky_count":         agg["flaky"],
+    "passed_after_retry_count": agg["flaky"],
+    "retry_count":         sum(test.get("retries", 0) for test in all_tests),
     "duration_ms":         agg["duration_ms"],
     "slowest_tests":       sorted(slow_tests, key=lambda x: -x["duration_ms"])[:10],
     "failed_tests":        failed_tests,
@@ -411,7 +425,8 @@ run_entry = {
     "shell_failed_tests":  shell_failed_tests,
 }
 print(f"[stats] Run #{run_number}: playwright total={run_entry['total']} passed={run_entry['passed']} "
-      f"failed={run_entry['failed']} flaky={run_entry['flaky_count']} skipped={run_entry['skipped']}")
+      f"failed={run_entry['failed']} passed_after_retry={run_entry['passed_after_retry_count']} "
+      f"retries={run_entry['retry_count']} skipped={run_entry['skipped']}")
 if failed_tests:
     print(f"[stats] Failed tests ({len(failed_tests)}):")
     for t in failed_tests:
@@ -428,10 +443,23 @@ runs_file = os.path.join(stats_dir, "runs.json")
 if os.path.exists(runs_file):
     with open(runs_file) as f:
         store = json.load(f)
+    if not isinstance(store, dict) or not isinstance(store.get("runs"), list):
+        print(f"[stats] Existing {runs_file} must contain a runs array", file=sys.stderr)
+        raise SystemExit(1)
+    if "schemaVersion" in store:
+        schema_version = store["schemaVersion"]
+        if isinstance(schema_version, bool) or not isinstance(schema_version, int) or schema_version != RUNS_SCHEMA_VERSION:
+            print(
+                f"[stats] Unsupported runs.json schemaVersion {schema_version!r}; "
+                f"expected {RUNS_SCHEMA_VERSION}",
+                file=sys.stderr,
+            )
+            raise SystemExit(1)
+    store["schemaVersion"] = RUNS_SCHEMA_VERSION
     prev_count = len(store.get("runs", []))
     print(f"[stats] Loaded existing runs.json: {prev_count} run(s) on record")
 else:
-    store = {"runs": []}
+    store = {"schemaVersion": RUNS_SCHEMA_VERSION, "runs": []}
     prev_count = 0
     print(f"[stats] No existing runs.json — starting fresh")
 
@@ -486,6 +514,17 @@ def total_tests(run):
         + run.get("shell_passed", 0)
         + run.get("shell_failed", 0)
         + run.get("shell_skipped", 0)
+    )
+
+def retry_count(run):
+    if isinstance(run.get("retry_count"), int):
+        return run["retry_count"]
+    tests = run.get("tests", [])
+    if any("retries" in test for test in tests):
+        return sum(test.get("retries", 0) for test in tests)
+    return sum(
+        test.get("retries", max(0, test.get("attempts", 1) - 1))
+        for test in run.get("flaky_tests", [])
     )
 
 def top_failing(runs, n=10):
@@ -572,11 +611,21 @@ top_slow = sorted(slow_by_test.items(), key=lambda x: -x[1])[:5]
 
 retry_by_test = {}
 for _r in eligible:
-    for _t in _r.get("flaky_tests", []):
-        k = _t["title"]
-        retry_by_test[k] = max(retry_by_test.get(k, 0), _t.get("attempts", 1))
+    for _t in _r.get("tests", []):
+        retries = _t.get("retries", 0)
+        if retries > 0:
+            k = _t["title"]
+            retry_by_test[k] = retry_by_test.get(k, 0) + retries
+    if not any("retries" in _t for _t in _r.get("tests", [])):
+        for _t in _r.get("flaky_tests", []):
+            retries = _t.get("retries", max(0, _t.get("attempts", 1) - 1))
+            if retries > 0:
+                k = _t["title"]
+                retry_by_test[k] = retry_by_test.get(k, 0) + retries
 most_retried = sorted(retry_by_test.items(), key=lambda x: -x[1])[:5]
 
+total_retries = sum(retry_count(r) for r in eligible)
+avg_retries = round(total_retries / max(1, len(eligible)), 1)
 rate_cls = "rate-ok" if pass_rate >= 90 else ("rate-warn" if pass_rate >= 70 else "rate-bad")
 
 now_utc = datetime.now(timezone.utc)
@@ -612,8 +661,8 @@ body{{font-family:system-ui,-apple-system,Arial,sans-serif;margin:0;background:#
 .rate-ok{{background:#dcfce7;color:#15803d}}
 .rate-warn{{background:#fef9c3;color:#854d0e}}
 .rate-bad{{background:#fee2e2;color:#b91c1c}}
-.stats-row{{display:grid;grid-template-columns:repeat(4,1fr);gap:.625rem;margin-bottom:.875rem}}
-.selected-run-stats{{grid-template-columns:repeat(5,minmax(0,1fr))}}
+.stats-row{{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.625rem;margin-bottom:.875rem}}
+.selected-run-stats{{grid-template-columns:repeat(6,minmax(0,1fr))}}
 .duration-stats{{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .stat-box{{background:#f8fafc;border:1px solid #e2e8f0;border-radius:.5rem;padding:.6rem .5rem;text-align:center}}
 .stat-val{{font-size:1.15rem;font-weight:700;color:#1a1a2e;line-height:1.2}}
@@ -637,6 +686,23 @@ td:last-child{{text-align:right;font-weight:700;color:#dc2626;white-space:nowrap
 .all-tests td:last-child{{text-align:left;font-weight:400;color:#374151;white-space:normal}}
 .all-tests th button{{border:0;background:transparent;color:inherit;font:inherit;letter-spacing:inherit;text-transform:inherit;padding:0;cursor:pointer}}
 .all-tests th button:hover{{color:#475569}}
+.test-detail-trigger{{border:0;background:transparent;padding:0;color:#2563eb;font:inherit;text-align:left;cursor:pointer}}
+.test-detail-trigger:hover{{text-decoration:underline}}
+.test-detail{{margin-top:.75rem;border:1px solid #cbd5e1;border-radius:.625rem;background:#fff;padding:1rem}}
+.test-detail-header{{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem}}
+.test-detail-close{{border:1px solid #cbd5e1;border-radius:.375rem;background:#fff;color:#334155;padding:.25rem .55rem;cursor:pointer}}
+.test-detail-title{{font-weight:700;overflow-wrap:anywhere}}
+.test-detail-summary{{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.625rem;margin:.875rem 0}}
+.test-detail-summary-item{{background:#f8fafc;border:1px solid #e2e8f0;border-radius:.5rem;padding:.6rem}}
+.test-detail-summary-item strong{{display:block;font-size:.85rem}}
+.test-detail-summary-item span{{display:block;font-size:.68rem;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-top:.15rem}}
+.test-timeline{{display:flex;align-items:center;gap:.25rem;margin:.5rem 0 1rem;min-height:1.75rem}}
+.test-timeline a{{width:1.25rem;height:1.25rem;border-radius:.25rem;border:1px solid rgba(0,0,0,.12);display:block}}
+.test-timeline-passed{{background:#22c55e}}
+.test-timeline-failed{{background:#ef4444}}
+.test-timeline-skipped{{background:#94a3b8}}
+.test-timeline-flaky{{background:#eab308}}
+.test-detail-table td:last-child{{text-align:left;font-weight:400;color:#374151}}
 .comparison-note{{font-size:.78rem;color:#64748b;margin:.25rem 0 .5rem}}
 .status-badge,.change-badge{{display:inline-block;border-radius:999px;padding:.1rem .45rem;font-size:.7rem;font-weight:700;white-space:nowrap}}
 .status-passed{{background:#dcfce7;color:#15803d}}
@@ -646,9 +712,9 @@ td:last-child{{text-align:right;font-weight:700;color:#dc2626;white-space:nowrap
 .change-new{{background:#dbeafe;color:#1d4ed8}}
 .change-updated{{background:#ffedd5;color:#c2410c}}
 #all-tests-body tr.test-trend-match td{{background:#fef3c7}}
-.test-pagination{{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:.6rem;margin:.75rem 0;font-size:.78rem;color:#64748b}}
-.test-pagination button{{border:1px solid #cbd5e1;border-radius:.375rem;background:#fff;color:#334155;padding:.3rem .6rem;cursor:pointer}}
-.test-pagination button:disabled{{color:#94a3b8;background:#f8fafc;cursor:not-allowed}}
+.test-pagination,.run-pagination{{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:.6rem;margin:.75rem 0;font-size:.78rem;color:#64748b}}
+.test-pagination button,.run-pagination button{{border:1px solid #cbd5e1;border-radius:.375rem;background:#fff;color:#334155;padding:.3rem .6rem;cursor:pointer}}
+.test-pagination button:disabled,.run-pagination button:disabled{{color:#94a3b8;background:#f8fafc;cursor:not-allowed}}
 .test-pagination select{{border:1px solid #cbd5e1;border-radius:.375rem;background:#fff;color:#334155;padding:.3rem}}
 .all-tests th{{vertical-align:top;min-width:5rem}}
 .column-filter{{margin-top:.3rem;text-transform:none;letter-spacing:normal;font-size:.72rem;font-weight:400}}
@@ -697,31 +763,44 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
         # Select a run before showing its test list; newest run is selected by default.
         fh.write('<div class="section-lbl">Tests in selected run</div>\n')
         fh.write('<select id="run-picker" style="font-size:.8rem;padding:.35rem .6rem;border:1px solid #e2e8f0;border-radius:.4rem;background:#fff;color:#374151;width:100%;max-width:42rem;cursor:pointer">\n')
-        for _i, _run in enumerate(reversed(runs)):
+        for _i, _run in enumerate(reversed(runs[-20:])):
             _orig_idx = len(runs) - 1 - _i
             _ts = _run["timestamp"][:16].replace("T", " ")
             _fail = _run.get("failed", 0) + _run.get("shell_failed", 0)
             _status = "✓" if _fail == 0 else "✗"
             _label = (
                 f"{_status} Run #{_run['run_id']} — {_ts}Z"
-                f" — {_run.get('passed', 0) + _run.get('shell_passed', 0)}p / {_fail}f"
-                f" / {_run.get('flaky_count', 0)} flaky"
+                f" — {_run.get('passed', 0) + _run.get('flaky_count', 0) + _run.get('shell_passed', 0)}p / {_fail}f"
+                f" / {_run.get('passed_after_retry_count', _run.get('flaky_count', 0))} passed after retry"
+                f" / {retry_count(_run)} retries"
                 f" / {_run.get('skipped', 0) + _run.get('shell_skipped', 0)} skipped"
             )
             _selected = " selected" if _orig_idx == len(runs) - 1 else ""
             fh.write(f'<option value="{_orig_idx}"{_selected}>{esc(_label)}</option>\n')
         fh.write('</select>\n')
+        fh.write('<div class="run-pagination" aria-label="Run selector pagination">'
+                 '<button type="button" id="run-page-prev" aria-label="Newer runs" disabled>Newer</button>'
+                 '<span id="run-page-range"></span>'
+                 '<button type="button" id="run-page-next" aria-label="Older runs">Older</button></div>\n')
+        fh.write('<button type="button" class="test-filter-reset" id="export-runs-json">Export JSON</button>\n')
         fh.write('<button type="button" class="test-filter-reset" id="reset-dashboard-preferences">Reset filters and selections</button>\n')
         fh.write('<div id="selected-run-tests"></div>\n')
+        fh.write('<div id="test-detail" aria-live="polite"></div>\n')
         fh.write('<div id="run-detail" style="margin-top:.875rem"></div>\n')
+        _runs_store_json = json.dumps(store).replace('</', '<\\/')
         _runs_json = json.dumps(runs).replace('</', '<\\/')
-        fh.write(f'<script>var RUNS={_runs_json};</script>\n')
+        fh.write(f'<script>var RUNS_STORE={_runs_store_json};var RUNS=RUNS_STORE.runs;</script>\n')
         fh.write('''\
 <script>
 (function(){
   var picker=document.getElementById('run-picker');
+  var runPagePrev=document.getElementById('run-page-prev');
+  var runPageNext=document.getElementById('run-page-next');
+  var runPageRange=document.getElementById('run-page-range');
   var testsBox=document.getElementById('selected-run-tests');
   var detail=document.getElementById('run-detail');
+  var runPageSize=20;
+  var runPage=0;
   var cookiePath=location.pathname.slice(0,location.pathname.lastIndexOf('/')+1)||'/';
   var cookieName='testStatsPrefs_'+cookiePath.replace(/[^a-zA-Z0-9]/g,'_');
   function readPrefs(){
@@ -772,6 +851,144 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
   function statusRank(status){
     var ranks={failed:0,flaky:1,passed:2,skipped:3};
     return Object.prototype.hasOwnProperty.call(ranks,status)?ranks[status]:4;
+  }
+  function finalStatus(test){
+    return test.final_status||(test.status==='flaky'?'passed':(test.status||'unknown'));
+  }
+  function passedAfterRetry(test){
+    return test.passed_after_retry===true||(!Object.prototype.hasOwnProperty.call(test,'passed_after_retry')&&test.status==='flaky');
+  }
+  function retryCount(test){
+    return Number(test.retries)||0;
+  }
+  function testIdentity(test){
+    return (test.source||'')+'\\u0000'+(test.file||'')+'\\u0000'+(test.title||'');
+  }
+  function getTestExecutions(test){
+    var identity=testIdentity(test);
+    var executions=[];
+    for(var r=RUNS.length-1;r>=0&&executions.length<20;r--){
+      var run=RUNS[r];
+      var match=null;
+      var tests=run.tests||[];
+      for(var i=0;i<tests.length;i++){
+        if(testIdentity(tests[i])===identity){
+          match=tests[i];
+          break;
+        }
+      }
+      if(!match){
+        var failureLists=(run.failed_tests||[]).concat(run.shell_failed_tests||[]);
+        var failure=null;
+        for(var f=0;f<failureLists.length;f++){
+          if(failureLists[f].title===test.title){
+            failure=failureLists[f];
+            break;
+          }
+        }
+        var flakyMatch=null;
+        for(var k=0;k<(run.flaky_tests||[]).length;k++){
+          if(run.flaky_tests[k].title===test.title){flakyMatch=run.flaky_tests[k];break;}
+        }
+        if(failure){
+          match={status:'failed',duration_ms:0,retries:0,error:failure.error||''};
+        }else if(flakyMatch){
+          match={status:'flaky',duration_ms:test.duration_ms||0,retries:Number(flakyMatch.retries!==undefined?flakyMatch.retries:Math.max(0,(flakyMatch.attempts||1)-1))||0};
+        }else{
+          continue;
+        }
+      }
+      var status=finalStatus(match);
+      var error='';
+      var failureLists=(run.failed_tests||[]).concat(run.shell_failed_tests||[]);
+      for(var m=0;m<failureLists.length;m++){
+        if(failureLists[m].title===test.title){
+          error=failureLists[m].error||'';
+          break;
+        }
+      }
+      executions.push({
+        run_id:run.run_id,
+        run_url:run.run_url||'',
+        timestamp:run.timestamp||'',
+        status:status,
+        duration_ms:Number(match.duration_ms)||0,
+        retries:retryCount(match),
+        error:error
+      });
+    }
+    return executions;
+  }
+  function openTestDetail(test){
+    var detail=document.getElementById('test-detail');
+    if(!detail){return;}
+    var executions=getTestExecutions(test);
+    var firstFailure=null,lastSuccess=null,totalRetries=0;
+    for(var i=0;i<executions.length;i++){
+      var execution=executions[i];
+      totalRetries+=execution.retries;
+      if(execution.status==='failed'){
+        if(!firstFailure||execution.timestamp<firstFailure){firstFailure=execution.timestamp;}
+      }
+      if(execution.status==='passed'||execution.status==='flaky'){
+        if(!lastSuccess){lastSuccess=execution.timestamp;}
+      }
+    }
+    var latest=executions[0]||null;
+    var timeline='';
+    for(var i=executions.length-1;i>=0;i--){
+      var execution=executions[i];
+      var statusClass=execution.status==='passed'?'test-timeline-passed'
+        :(execution.status==='failed'?'test-timeline-failed'
+        :(execution.status==='flaky'?'test-timeline-flaky':'test-timeline-skipped'));
+      var label=esc((execution.timestamp||'').replace('T',' ').slice(0,16)+' — '+execution.status+' — Run #'+execution.run_id);
+      timeline+=execution.run_url
+        ?'<a class="'+statusClass+'" href="'+esc(execution.run_url)+'" target="_blank" rel="noopener" title="'+label+'"></a>'
+        :'<span class="'+statusClass+'" title="'+label+'"></span>';
+    }
+    var failureRows='';
+    for(var i=0;i<executions.length;i++){
+      var execution=executions[i];
+      if(execution.status==='failed'){
+        failureRows+='<tr><td>'+esc(execution.timestamp.replace('T',' ').slice(0,16))+'</td>'
+          +'<td>'+esc(execution.run_id)+'</td>'
+          +'<td>'+esc(execution.error||'No failure message provided.')+'</td>'
+          +(execution.run_url?'<td><a href="'+esc(execution.run_url)+'" target="_blank" rel="noopener">Open run ↗</a></td>':'<td>&mdash;</td>')+'</tr>';
+      }
+    }
+    if(!failureRows){failureRows='<tr><td colspan="4">No failure messages in the last 20 executions.</td></tr>';}
+    var executionRows='';
+    for(var i=0;i<executions.length;i++){
+      var execution=executions[i];
+      executionRows+='<tr><td>'+esc(execution.timestamp.replace('T',' ').slice(0,16))+'</td>'
+        +(execution.run_url?'<td><a href="'+esc(execution.run_url)+'" target="_blank" rel="noopener">#'+esc(execution.run_id)+' ↗</a></td>':'<td>#'+esc(execution.run_id)+'</td>')
+        +'<td>'+esc(execution.status)+'</td><td>'+fmtTestDur(execution.duration_ms)+'</td><td>'+execution.retries+'</td></tr>';
+    }
+    if(!executionRows){executionRows='<tr><td colspan="5">No individual executions were saved.</td></tr>';}
+    detail.innerHTML='<div class="test-detail">'
+      +'<div class="test-detail-header"><div><div class="section-lbl">Test detail</div><div class="test-detail-title">'+esc(test.title||'unnamed')+'</div></div>'
+      +'<button type="button" class="test-detail-close" aria-label="Close test detail">Close</button></div>'
+      +'<div class="test-detail-summary">'
+      +'<div class="test-detail-summary-item"><strong>'+esc(firstFailure?(firstFailure.replace('T',' ').slice(0,16)+' UTC'):'&mdash;')+'</strong><span>First failure date</span></div>'
+      +'<div class="test-detail-summary-item"><strong>'+esc(lastSuccess?(lastSuccess.replace('T',' ').slice(0,16)+' UTC'):'&mdash;')+'</strong><span>Last successful execution</span></div>'
+      +'<div class="test-detail-summary-item"><strong>'+totalRetries+'</strong><span>Retry count (last 20)</span></div>'
+      +'</div>'
+      +'<div class="section-lbl">Pass/fail timeline</div><div class="test-timeline" aria-label="Pass/fail timeline">'+timeline+'</div>'
+      +'<div class="section-lbl">Last 20 executions</div><div class="table-scroll"><table class="test-detail-table"><thead><tr><th>Timestamp</th><th>GitHub Actions run</th><th>Status</th><th>Execution duration</th><th>Retry count</th></tr></thead><tbody>'+executionRows+'</tbody></table></div>'
+      +'<div class="section-lbl">Failure messages</div><div class="table-scroll"><table class="test-detail-table"><thead><tr><th>Timestamp</th><th>Run</th><th>Failure message</th><th>Link</th></tr></thead><tbody>'+failureRows+'</tbody></table></div>'
+      +'</div>';
+    detail.querySelector('.test-detail-close').addEventListener('click',function(){detail.innerHTML='';});
+    detail.scrollIntoView({behavior:'smooth',block:'nearest'});
+  }
+  function runRetryCount(run){
+    if(typeof run.retry_count==='number'){return run.retry_count;}
+    var tests=run.tests||[];
+    if(tests.some(function(test){return Object.prototype.hasOwnProperty.call(test,'retries');})){
+      return tests.reduce(function(total,test){return total+retryCount(test);},0);
+    }
+    return (run.flaky_tests||[]).reduce(function(total,test){
+      return total+Number(test.retries!==undefined?test.retries:Math.max(0,(test.attempts||1)-1));
+    },0);
   }
   function sourceLabel(test){
     return test.source_file||(['JUnit','NUnit','xUnit','VSTest'].includes(test.source)?'Additional':test.source||'');
@@ -840,7 +1057,7 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
         ||(timeFilterValue==='slowest10'&&duration>=timeThresholds.slowest10);
       return (!name||(test.title||'').toLowerCase().indexOf(name)!==-1)
         &&sources.indexOf(sourceLabel(test))!==-1
-        &&statuses.indexOf(test.status||'unknown')!==-1
+        &&statuses.indexOf(finalStatus(test))!==-1
         &&changes.indexOf(changeValue(test))!==-1
         &&matchesTime;
     }).sort(function(a,b){return compareTestValues(a,b,sortColumn);});
@@ -868,8 +1085,8 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
       left=sourceLabel(a);
       right=sourceLabel(b);
     }else if(column==='status'){
-      left=statusRank(a.status||'unknown');
-      right=statusRank(b.status||'unknown');
+      left=statusRank(finalStatus(a));
+      right=statusRank(finalStatus(b));
     }else if(column==='duration'){
       left=Number(a.duration_ms)||0;
       right=Number(b.duration_ms)||0;
@@ -898,7 +1115,7 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
     currentPage=Math.min(Math.max(0,currentPage),pageCount-1);
     var start=currentPage*testsPerPage,end=Math.min(start+testsPerPage,currentTests.length),rows='';
     for(var i=start;i<end;i++){
-      var test=currentTests[i],title=test.title||'',status=test.status||'unknown';
+      var test=currentTests[i],title=test.title||'',status=finalStatus(test);
       var statusClass={passed:'status-passed',failed:'status-failed',flaky:'status-flaky',skipped:'status-skipped'}[status]||'';
       var change='—';
       if(test.change==='new'){
@@ -906,12 +1123,22 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
       }else if(test.change==='changed'){
         change='<span class="change-badge change-updated">'+esc(test.previous_status||'unknown')+' &rarr; '+esc(status)+'</span>';
       }
-      rows+='<tr data-test-title="'+esc(title)+'" data-test-status="'+esc(status)+'"><td title="'+esc(title)+'">'+esc(clip(shortName(title),90))+'</td>'
+      var passedAfterRetryLabel=test.source==='Playwright'?(passedAfterRetry(test)?'Yes':'No'):'—';
+      rows+='<tr data-test-title="'+esc(title)+'" data-test-status="'+esc(status)+'"><td title="'+esc(title)+'">'
+        +'<button type="button" class="test-detail-trigger" data-test-index="'+i+'" aria-label="Open details for '+esc(title)+'">'+esc(clip(shortName(title),90))+'</button></td>'
         +'<td>'+esc(sourceLabel(test))+'</td><td><span class="status-badge '+statusClass+'">'+esc(status)+'</span></td>'
+        +'<td>'+passedAfterRetryLabel+'</td><td>'+retryCount(test)+'</td>'
         +'<td>'+fmtTestDur(test.duration_ms)+'</td><td>'+change+'</td></tr>';
     }
-    if(!currentTests.length){rows='<tr><td class="test-filter-empty" colspan="5">No tests match these filters.</td></tr>';}
+    if(!currentTests.length){rows='<tr><td class="test-filter-empty" colspan="7">No tests match these filters.</td></tr>';}
     document.getElementById('all-tests-body').innerHTML=rows;
+    var detailTriggers=document.querySelectorAll('.test-detail-trigger');
+    for(var t=0;t<detailTriggers.length;t++){
+      detailTriggers[t].addEventListener('click',function(){
+        var testIndex=Number(this.getAttribute('data-test-index'));
+        if(currentTests[testIndex]){openTestDetail(currentTests[testIndex]);}
+      });
+    }
     document.getElementById('test-page-range').textContent='Showing '+(currentTests.length?start+1:0)+'-'+end+' of '+currentTests.length+' tests';
     document.getElementById('test-page-count').textContent='Page '+(currentPage+1)+' of '+pageCount;
     document.getElementById('test-page-prev').disabled=currentPage===0;
@@ -924,24 +1151,29 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
     var tests=run.tests||[];
     allTests=tests.slice();
     currentTests=allTests.slice().sort(function(a,b){return compareTestValues(a,b,sortColumn);});
-    var counts={total:0,passed:0,failed:0,flaky:0,skipped:0};
+    var counts={total:0,passed:0,failed:0,flaky:0,retries:0,skipped:0};
     if(tests.length){
       counts.total=tests.length;
       for(var i=0;i<tests.length;i++){
-        if(Object.prototype.hasOwnProperty.call(counts,tests[i].status)){counts[tests[i].status]++;}
+        var status=finalStatus(tests[i]);
+        if(Object.prototype.hasOwnProperty.call(counts,status)){counts[status]++;}
+        if(passedAfterRetry(tests[i])){counts.flaky++;}
+        counts.retries+=retryCount(tests[i]);
       }
     }else{
       counts.total=(run.total||0)+(run.shell_passed||0)+(run.shell_failed||0)+(run.shell_skipped||0);
-      counts.passed=(run.passed||0)+(run.shell_passed||0);
+      counts.passed=(run.passed||0)+(run.flaky_count||0)+(run.shell_passed||0);
       counts.failed=(run.failed||0)+(run.shell_failed||0);
       counts.flaky=run.flaky_count||0;
+      counts.retries=runRetryCount(run);
       counts.skipped=(run.skipped||0)+(run.shell_skipped||0);
     }
     var html='<div class="stats-row selected-run-stats" style="margin:.6rem 0">'
       +'<div class="stat-box"><div class="stat-val">'+counts.total+'</div><div class="stat-lbl">Tests</div></div>'
       +'<div class="stat-box"><div class="stat-val">'+counts.passed+'</div><div class="stat-lbl">Passed</div></div>'
       +'<div class="stat-box stat-fail"><div class="stat-val">'+counts.failed+'</div><div class="stat-lbl">Failed</div></div>'
-      +'<div class="stat-box stat-flaky"><div class="stat-val">'+counts.flaky+'</div><div class="stat-lbl">Flaky</div></div>'
+      +'<div class="stat-box stat-flaky"><div class="stat-val">'+counts.flaky+'</div><div class="stat-lbl">Passed after retry</div></div>'
+      +'<div class="stat-box"><div class="stat-val">'+counts.retries+'</div><div class="stat-lbl">Retries</div></div>'
       +'<div class="stat-box"><div class="stat-val">'+counts.skipped+'</div><div class="stat-lbl">Skipped</div></div>'
       +'</div>';
     if(run.test_comparison_available){
@@ -957,7 +1189,7 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
       return;
     }
     var sources=Array.from(new Set(tests.map(sourceLabel))).sort(function(a,b){return a.localeCompare(b);});
-    var statuses=Array.from(new Set(tests.map(function(test){return test.status||'unknown';}))).sort();
+    var statuses=Array.from(new Set(tests.map(finalStatus))).sort();
     var changes=Array.from(new Set(tests.map(changeValue))).sort(function(a,b){return ['new','changed','unchanged'].indexOf(a)-['new','changed','unchanged'].indexOf(b);});
     html+='<div class="test-pagination" aria-label="Test table pagination">'
       +'<button type="button" id="test-page-prev" aria-label="Previous test page">Prev</button>'
@@ -970,8 +1202,9 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
       +'<input type="search" class="column-filter-name" id="test-name-filter" value="'+esc(savedPrefs.testName||'')+'" placeholder="Search"></th>'
       +'<th aria-sort="none"><button type="button" data-sort="source" data-label="Source" aria-label="Sort by Source">Source</button>'
       +checkboxFilter('test-filter-source',sources)+'</th>'
-      +'<th aria-sort="none"><button type="button" data-sort="status" data-label="Status" aria-label="Sort by Status">Status</button>'
+      +'<th aria-sort="none"><button type="button" data-sort="status" data-label="Final status" aria-label="Sort by Final status">Final status</button>'
       +checkboxFilter('test-filter-status',statuses)+'</th>'
+      +'<th>Passed after retry</th><th>Retries</th>'
       +'<th aria-sort="none"><button type="button" data-sort="duration" data-label="Execution time" aria-label="Sort by Execution time">Execution time</button>'
       +timeFilter(tests)+'</th>'
       +'<th aria-sort="none"><button type="button" data-sort="change" data-label="Change" aria-label="Sort by Change">Change</button>'
@@ -1034,16 +1267,58 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
     }else if(!flaky.length){html+='<p style="font-size:.8rem;color:#15803d;margin:.2rem 0">None ✓</p>';}
     else{html+='<ul class="flaky-list">';
       for(var i=0;i<flaky.length;i++){var t=flaky[i],s=clip(shortName(t.title),70);
-        html+='<li title="'+esc(t.title)+'">'+esc(s)+' <strong>('+t.attempts+' attempts)</strong></li>';}
+        html+='<li title="'+esc(t.title)+'">'+esc(s)+' <strong>('+Number(t.retries!==undefined?t.retries:Math.max(0,(t.attempts||1)-1))+' retries)</strong></li>';}
       html+='</ul>';}
     detail.innerHTML=html;
+  }
+  function runLabel(run){
+    var ts=(run.timestamp||'').slice(0,16).replace('T',' ');
+    var failed=(run.failed||0)+(run.shell_failed||0);
+    var status=failed===0?'✓':'✗';
+    return status+' Run #'+run.run_id+' — '+ts+'Z'
+      +' — '+((run.passed||0)+(run.flaky_count||0)+(run.shell_passed||0))+'p / '+failed+'f'
+      +' / '+(run.passed_after_retry_count||run.flaky_count||0)+' passed after retry'
+      +' / '+runRetryCount(run)+' retries'
+      +' / '+((run.skipped||0)+(run.shell_skipped||0))+' skipped';
+  }
+  function renderRunPage(page,selectedIndex){
+    var pageCount=Math.ceil(RUNS.length/runPageSize);
+    runPage=Math.max(0,Math.min(page,pageCount-1));
+    var newestIndex=RUNS.length-1-runPage*runPageSize;
+    var oldestIndex=Math.max(0,newestIndex-runPageSize+1);
+    var options=[];
+    for(var i=newestIndex;i>=oldestIndex;i--){
+      options.push('<option value="'+i+'">'+esc(runLabel(RUNS[i]))+'</option>');
+    }
+    picker.innerHTML=options.join('');
+    if(selectedIndex<oldestIndex||selectedIndex>newestIndex){selectedIndex=newestIndex;}
+    picker.value=String(selectedIndex);
+    var firstRun=runPage*runPageSize+1;
+    var lastRun=firstRun+(newestIndex-oldestIndex);
+    runPageRange.textContent='Runs '+firstRun+'-'+lastRun+' of '+RUNS.length+' (newest first)';
+    runPagePrev.disabled=runPage===0;
+    runPageNext.disabled=runPage>=pageCount-1;
+    renderRun(RUNS[selectedIndex]);
   }
   document.getElementById('reset-dashboard-preferences').addEventListener('click',function(){
     document.cookie=cookieName+'=; Path='+cookiePath+'; Max-Age=0; SameSite=Lax';
     location.reload();
   });
+  document.getElementById('export-runs-json').addEventListener('click',function(){
+    var blob=new Blob([JSON.stringify(RUNS_STORE,null,2)],{type:'application/json;charset=utf-8'});
+    var url=URL.createObjectURL(blob);
+    var link=document.createElement('a');
+    link.href=url;
+    link.download='runs.json';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  });
   picker.addEventListener('change',function(){renderRun(RUNS[parseInt(this.value,10)]);});
-  renderRun(RUNS[parseInt(picker.value,10)]);
+  runPagePrev.addEventListener('click',function(){renderRunPage(runPage-1,-1);});
+  runPageNext.addEventListener('click',function(){renderRunPage(runPage+1,-1);});
+  renderRunPage(0,RUNS.length-1);
 })();
 </script>
 ''')
@@ -1055,7 +1330,8 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
         fh.write(f'<div class="stat-box"><div class="stat-val">{avg_total}</div><div class="stat-lbl">Avg tests/run</div></div>\n')
         fh.write(f'<div class="stat-box"><div class="stat-val">{avg_passed}</div><div class="stat-lbl">Avg passed/run</div></div>\n')
         fh.write(f'<div class="stat-box stat-fail"><div class="stat-val">{avg_failed:g}</div><div class="stat-lbl">Avg failures/run</div></div>\n')
-        fh.write(f'<div class="stat-box stat-flaky"><div class="stat-val">{avg_flaky:g}</div><div class="stat-lbl">Avg flaky/run</div></div>\n')
+        fh.write(f'<div class="stat-box stat-flaky"><div class="stat-val">{avg_flaky:g}</div><div class="stat-lbl">Avg passed after retry/run</div></div>\n')
+        fh.write(f'<div class="stat-box"><div class="stat-val">{avg_retries:g}</div><div class="stat-lbl">Avg retries/run</div></div>\n')
         fh.write('</div>\n')
         if any(durations):
             fh.write('<div class="section-lbl">Execution time</div>\n')
@@ -1091,7 +1367,9 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
             label = (
                 f"Run #{run['run_id']}{dur_label} — "
                 f"{run.get('passed', 0) + run.get('shell_passed', 0)} passed / "
-                f"{pw_failed + sh_failed} failed / {pw_flaky} flaky / "
+                f"{pw_failed + sh_failed} failed / "
+                f"{run.get('passed_after_retry_count', pw_flaky)} passed after retry / "
+                f"{retry_count(run)} retries / "
                 f"{run.get('skipped', 0) + run.get('shell_skipped', 0)} skipped"
             )
             fh.write(
@@ -1171,7 +1449,7 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
     }else if(v==='retried'){
       d=AGG.retried;
       if(!d.length){html='<p style="font-size:.8rem;color:#15803d;margin:.25rem 0">No retries recorded ✓</p>';}
-      else{html='<div class="table-scroll"><table><tr><th>Test</th><th style="width:5.5rem">Max retries</th></tr>';
+      else{html='<div class="table-scroll"><table><tr><th>Test</th><th style="width:5.5rem">Retries</th></tr>';
         for(var i=0;i<d.length;i++){var t=d[i],s=clip(shortName(t[0]),65);
           html+='<tr><td title="'+esc(t[0])+'">'+esc(s)+'</td><td style="color:#d97706">'+t[1]+'</td></tr>';}
         html+='</table></div>';}

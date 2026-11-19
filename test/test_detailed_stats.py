@@ -12,6 +12,67 @@ SCRIPT = Path(__file__).parents[1] / "src" / "update-stats.sh"
 
 
 class DetailedStatsTests(unittest.TestCase):
+    def test_test_rows_open_detail_with_execution_history(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            results = root / "results"
+            results.mkdir()
+            stats = root / "site" / "stats"
+            stats.mkdir(parents=True)
+            now = dt.datetime.now(dt.timezone.utc)
+            prior = []
+            for number in range(1, 22):
+                prior.append({
+                    "run_id": str(number),
+                    "run_url": f"https://github.com/owner/repo/actions/runs/{number}",
+                    "timestamp": (now - dt.timedelta(hours=22-number)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "total": 1,
+                    "passed": 0 if number in (3, 8) else 1,
+                    "failed": 1 if number in (3, 8) else 0,
+                    "skipped": 0,
+                    "flaky_count": 0,
+                    "tests": [{
+                        "source": "JUnit",
+                        "source_file": "shell.xml",
+                        "title": "suite > flaky-test",
+                        "file": "suite",
+                        "duration_ms": 100 + number,
+                        "status": "failed" if number in (3, 8) else "passed",
+                    }],
+                    "failed_tests": [],
+                    "shell_failed_tests": (
+                        [{"title": "suite > flaky-test", "error": "historical failure"}]
+                        if number in (3, 8) else []
+                    ),
+                })
+            (stats / "runs.json").write_text(json.dumps({"runs": prior}))
+            (root / "shell.xml").write_text(
+                '<testsuite name="suite"><testcase classname="suite" name="flaky-test"/></testsuite>'
+            )
+            env = os.environ.copy()
+            env.update({
+                "RESULTS_DIR": str(results),
+                "SITE_DIR": str(root / "site"),
+                "SHELL_TESTS_XML": str(root / "shell.xml"),
+                "GITHUB_RUN_NUMBER": "22",
+                "GITHUB_RUN_ID": "run-22",
+                "GITHUB_SERVER_URL": "https://github.com",
+                "GITHUB_REPOSITORY": "owner/repo",
+            })
+            subprocess.run(["bash", str(SCRIPT)], check=True, env=env, capture_output=True, text=True)
+
+            dashboard = (stats / "index.html").read_text()
+            self.assertIn("test-detail-trigger", dashboard)
+            self.assertIn("openTestDetail(currentTests[testIndex])", dashboard)
+            self.assertIn("function getTestExecutions(test)", dashboard)
+            self.assertIn("Last 20 executions", dashboard)
+            self.assertIn("Pass/fail timeline", dashboard)
+            self.assertIn("Failure messages", dashboard)
+            self.assertIn("Execution duration", dashboard)
+            self.assertIn("Retry count", dashboard)
+            self.assertIn("First failure date", dashboard)
+            self.assertIn("Last successful execution", dashboard)
+            self.assertIn("GitHub Actions run", dashboard)
     def test_dashboard_shows_average_failures_and_flaky_tests_per_run(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -57,11 +118,73 @@ class DetailedStatsTests(unittest.TestCase):
             )
             self.assertIn(
                 '<div class="stat-box stat-flaky"><div class="stat-val">1.5</div>'
-                '<div class="stat-lbl">Avg flaky/run</div></div>',
+                '<div class="stat-lbl">Avg passed after retry/run</div></div>',
                 dashboard,
             )
+            self.assertIn("Avg retries/run", dashboard)
             self.assertNotIn("Total failures", dashboard)
             self.assertNotIn("Total flaky", dashboard)
+
+    def test_run_picker_pages_through_runs_in_batches_of_20(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            results = root / "results"
+            results.mkdir()
+            site = root / "site"
+            stats = site / "stats"
+            stats.mkdir(parents=True)
+            now = dt.datetime.now(dt.timezone.utc)
+            prior_runs = [{
+                "run_id": str(number),
+                "run_url": f"https://github.com/owner/repo/actions/runs/{number}",
+                "timestamp": (now - dt.timedelta(days=26 - number)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "total": 1,
+                "passed": 1,
+                "failed": 0,
+                "skipped": 0,
+                "flaky_count": 0,
+                "duration_ms": 0,
+                "slowest_tests": [],
+                "failed_tests": [],
+                "flaky_tests": [],
+                "tests": [],
+                "shell_passed": 0,
+                "shell_failed": 0,
+                "shell_skipped": 0,
+                "shell_failed_tests": [],
+            } for number in range(1, 26)]
+            (stats / "runs.json").write_text(json.dumps({"runs": prior_runs}))
+            env = os.environ.copy()
+            env.update({
+                "RESULTS_DIR": str(results),
+                "SITE_DIR": str(site),
+                "GITHUB_RUN_NUMBER": "26",
+                "GITHUB_RUN_ID": "run-26",
+                "GITHUB_SERVER_URL": "https://github.com",
+                "GITHUB_REPOSITORY": "owner/repo",
+            })
+            subprocess.run(
+                ["bash", str(SCRIPT)],
+                check=True,
+                env=env,
+                capture_output=True,
+                text=True,
+            )
+
+            dashboard = (stats / "index.html").read_text()
+            picker_start = dashboard.index('<select id="run-picker"')
+            picker_end = dashboard.index("</select>", picker_start)
+            options = [
+                line for line in dashboard[picker_start:picker_end].splitlines()
+                if "<option value=" in line
+            ]
+            self.assertEqual(len(options), 20)
+            self.assertTrue(options[0].startswith('<option value="25" selected>'))
+            self.assertIn('<option value="6"', options[-1])
+            self.assertFalse(any('value="5"' in option for option in options))
+            self.assertIn('id="run-page-prev"', dashboard)
+            self.assertIn('id="run-page-next"', dashboard)
+            self.assertIn('id="run-page-range"', dashboard)
 
     def test_reads_vstest_trx_as_supplemental_test_results(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -433,7 +556,10 @@ class DetailedStatsTests(unittest.TestCase):
                             "file": "tests/example.spec.js",
                             "tests": [{
                                 "status": "unexpected",
-                                "results": [{"duration": 300, "errors": [{"message": "failure detail"}]}],
+                                "results": [
+                                    {"duration": 0},
+                                    {"duration": 300, "errors": [{"message": "failure detail"}]},
+                                ],
                             }],
                         },
                         {
@@ -479,12 +605,25 @@ class DetailedStatsTests(unittest.TestCase):
             dashboard = (site / "stats" / "index.html").read_text()
 
             self.assertEqual((run["total"], run["passed"], run["failed"], run["skipped"]), (5, 2, 1, 1))
+            self.assertEqual((run["passed_after_retry_count"], run["retry_count"]), (1, 2))
             self.assertEqual((run["shell_passed"], run["shell_failed"], run["shell_skipped"]), (1, 1, 1))
             self.assertIn("failure detail", run["failed_tests"][0]["error"])
             playwright_tests = {test["title"]: test for test in run["tests"] if test["source"] == "Playwright"}
             self.assertEqual(playwright_tests["suite > fails"]["duration_ms"], 300)
             self.assertEqual(playwright_tests["suite > fails"]["source_file"], "playwright.json")
             self.assertEqual(playwright_tests["suite > retries"]["duration_ms"], 900)
+            self.assertEqual(
+                (playwright_tests["suite > fails"]["final_status"],
+                 playwright_tests["suite > fails"]["passed_after_retry"],
+                 playwright_tests["suite > fails"]["retries"]),
+                ("failed", False, 1),
+            )
+            self.assertEqual(
+                (playwright_tests["suite > retries"]["final_status"],
+                 playwright_tests["suite > retries"]["passed_after_retry"],
+                 playwright_tests["suite > retries"]["retries"]),
+                ("passed", True, 1),
+            )
             junit_tests = {test["title"]: test for test in run["tests"] if test["source"] == "JUnit"}
             self.assertEqual(junit_tests["syntax > pass"]["duration_ms"], 125)
             self.assertEqual(junit_tests["syntax > pass"]["source_file"], "shell.xml")
@@ -500,6 +639,9 @@ class DetailedStatsTests(unittest.TestCase):
                 2,
             )
             self.assertIn('"flaky": [["suite > retries", 1]]', dashboard)
+            self.assertIn("Passed after retry</th>", dashboard)
+            self.assertIn("Retries</th>", dashboard)
+            self.assertIn("passed_after_retry_count", dashboard)
             self.assertIn("else if(v==='flaky')", dashboard)
             self.assertIn("else if(v==='longest')", dashboard)
             self.assertIn("else if(v==='retried')", dashboard)
@@ -722,6 +864,9 @@ class DetailedStatsTests(unittest.TestCase):
             )
             self.assertIn('id="test-name-filter"', pages["columnHtml"])
             self.assertIn('id="reset-dashboard-preferences"', dashboard)
+            self.assertIn('id="export-runs-json"', dashboard)
+            self.assertIn("JSON.stringify(RUNS_STORE,null,2)", dashboard)
+            self.assertIn("link.download='runs.json'", dashboard)
             self.assertEqual(pages["noSource"]["range"], "Showing 0-0 of 0 tests")
             self.assertEqual(pages["noStatus"]["range"], "Showing 0-0 of 0 tests")
             self.assertEqual(pages["noChange"]["range"], "Showing 0-0 of 0 tests")
@@ -808,8 +953,10 @@ class DetailedStatsTests(unittest.TestCase):
                 "GITHUB_REPOSITORY": "owner/repo",
             })
             subprocess.run(["bash", str(SCRIPT)], check=True, env=env, capture_output=True, text=True)
+            store = json.loads((stats_dir / "runs.json").read_text())
             dashboard = (stats_dir / "index.html").read_text()
 
+            self.assertEqual(store["schemaVersion"], 1)
             self.assertIn('"shell_passed": 220', dashboard)
             self.assertIn("counts.total=(run.total||0)+(run.shell_passed||0)", dashboard)
             self.assertIn("counts.failed=(run.failed||0)+(run.shell_failed||0)", dashboard)

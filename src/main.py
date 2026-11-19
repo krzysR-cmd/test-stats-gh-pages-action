@@ -13,6 +13,9 @@ from urllib.parse import quote, urlsplit
 import xml.etree.ElementTree as ET
 
 
+RUNS_SCHEMA_VERSION = 1
+
+
 def fail(message):
     print(f"test-stats-gh-pages-action: {message}", file=sys.stderr)
     raise SystemExit(1)
@@ -498,8 +501,20 @@ def main():
             fail(f"cannot read existing statistics {runs_path}: {exc}")
         if not isinstance(store, dict) or not isinstance(store.get("runs"), list):
             fail(f"existing statistics {runs_path} must contain a runs array")
+        if "schemaVersion" in store:
+            schema_version = store["schemaVersion"]
+            if (
+                not isinstance(schema_version, int)
+                or isinstance(schema_version, bool)
+                or schema_version != RUNS_SCHEMA_VERSION
+            ):
+                fail(
+                    f"unsupported runs.json schemaVersion {schema_version!r}; "
+                    f"expected {RUNS_SCHEMA_VERSION}"
+                )
+        store["schemaVersion"] = RUNS_SCHEMA_VERSION
     else:
-        store = {"runs": []}
+        store = {"schemaVersion": RUNS_SCHEMA_VERSION, "runs": []}
 
     cutoff = dt.datetime.now(dt.timezone.utc) - dt.timedelta(days=window_days)
     recent = []

@@ -79,7 +79,10 @@ fail the action rather than producing success-shaped empty data.
 It creates/updates:
 
 - `<stats-subdirectory>/runs.json` — normalized run history, pruned to the
-  configured rolling window and deduplicated by GitHub run number.
+  configured rolling window and deduplicated by GitHub run number. The file
+  includes `"schemaVersion": 1`; files from earlier releases without this field
+  are treated as legacy schema version 1 and upgraded in place. Unsupported
+  schema versions fail explicitly instead of risking a silent format mismatch.
 - `<stats-subdirectory>/index.html` — a small static recent-run table.
 - `$GITHUB_STEP_SUMMARY` with test counts and a link to the published dashboard
   when its Pages URL is available; plus action outputs `total`, `passed`,
@@ -100,22 +103,29 @@ It creates/updates:
   from that run's measured durations (fastest/slowest percentiles and whether
   timing data is available). Filters apply before sorting and pagination and
   refresh when another run is selected.
-  The latest run is selected by default whenever the dashboard loads. Filters,
-  pagination, sorting, and trend selection are remembered in a site-scoped
-  cookie. A reset control clears saved preferences and restores defaults. The
-  table is paginated with 30 tests per page by default,
-  selectable sizes of 30, 50, or 100, Prev/Next controls, a displayed range,
+  The latest run is selected by default whenever the dashboard loads. The run
+  selector shows at most 20 runs at a time, with Newer/Older controls to page
+  through the remaining runs. Filters, pagination, sorting, and trend selection
+  are remembered in a site-scoped cookie. A reset control clears saved
+  preferences and restores defaults. The table is paginated with 30 tests per
+  page by default, selectable sizes of 30, 50, or 100, Prev/Next controls, a
+  displayed range,
   and a page count. It marks new tests and status changes against the previous
   run, and includes failures from each configured result source in the Top
   failing Test trends view. Selecting Top failing tests highlights every failed
   test in the selected run in yellow; the trend list remains limited to the top
   five across the history. Failures seen in only some runs are included in the
-  Flaky tests trend.
+  Flaky tests trend. Clicking a test name opens its detail view with up to 20
+  executions, a pass/fail timeline, failure messages, execution duration, retry
+  count, first failure date, last successful execution, and links to the
+  original GitHub Actions runs.
   Detailed statistics are enabled by default and can be disabled with
   `detailed-statistics: "false"`.
 
-For Playwright-format JSON, tests that pass after retries count as passed and
-are also exposed separately as `flaky_count` in the normalized run record.
+For Playwright-format JSON, retry successes count as passed and are reported
+separately as passed after retry. The detailed dashboard records each test's
+final status and retry count, and reports total retries separately from the
+number of tests that passed after retry.
 JUnit XML, VSTest TRX, NUnit 2/3 XML, and xUnit.net XML results contribute to
 the normalized results and summary. The detailed dashboard can include
 Playwright-format JSON and optional JUnit, VSTest, NUnit, or xUnit XML reports;
@@ -145,6 +155,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+
+# Serialize the complete read-update-publish cycle for this repository.
+concurrency:
+  group: gh-pages-${{ github.repository }}
+  cancel-in-progress: false
 
 permissions:
   contents: read
@@ -211,6 +226,17 @@ project. The first workflow run can create the `gh-pages` branch when it
 publishes, so you do not need to create the branch manually. After that run
 succeeds, open **Settings → Pages**, choose **Deploy from a branch**, then
 select `gh-pages` and the root (`/`) folder.
+
+The workflow-level `concurrency` group serializes the whole read-update-publish
+cycle, so each run restores the site after the previous run has finished
+publishing. If another workflow in the same repository also publishes to
+`gh-pages`, give it the same group name. Do not put this group only on the
+`publish` job: the site may already have been read by `build` before that job
+waits. With `cancel-in-progress: false`, a running workflow is not cancelled,
+but GitHub Actions keeps only one pending run per group; a newer run can replace
+an older pending run. If every test run must be recorded, use a durable queue or
+retry the update against the latest `gh-pages` content rather than relying on
+concurrency alone.
 
 With `force_orphan: true`, each deployment replaces the `gh-pages` branch with
 a new root commit. **The branch's previous commit history is not kept.** The
