@@ -994,8 +994,7 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
     for(var i=0;i<data.length;i++){selected[data[i][0]]=true;}
     var rows=document.querySelectorAll('#all-tests-body tr');
     for(var i=0;i<rows.length;i++){
-      var isFailed=v==='top'&&rows[i].getAttribute('data-test-status')==='failed';
-      rows[i].classList.toggle('test-trend-match',!!selected[rows[i].getAttribute('data-test-title')]||isFailed);
+      rows[i].classList.toggle('test-trend-match',!!selected[rows[i].getAttribute('data-test-title')]);
     }
   }
   function render(v){
