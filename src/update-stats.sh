@@ -650,6 +650,16 @@ td:last-child{{text-align:right;font-weight:700;color:#dc2626;white-space:nowrap
 .test-pagination button{{border:1px solid #cbd5e1;border-radius:.375rem;background:#fff;color:#334155;padding:.3rem .6rem;cursor:pointer}}
 .test-pagination button:disabled{{color:#94a3b8;background:#f8fafc;cursor:not-allowed}}
 .test-pagination select{{border:1px solid #cbd5e1;border-radius:.375rem;background:#fff;color:#334155;padding:.3rem}}
+.all-tests th{{vertical-align:top;min-width:5rem}}
+.column-filter{{margin-top:.3rem;text-transform:none;letter-spacing:normal;font-size:.72rem;font-weight:400}}
+.column-filter summary{{cursor:pointer;color:#64748b;text-transform:none;white-space:nowrap}}
+.column-filter-options{{display:flex;flex-direction:column;gap:.2rem;max-height:5rem;overflow:auto;margin-top:.25rem;text-transform:none}}
+.column-filter-options label{{display:inline-flex;align-items:center;gap:.25rem;font-size:.72rem;font-weight:400;color:#475569;text-transform:none;white-space:normal}}
+.column-filter-name{{box-sizing:border-box;width:100%;min-width:4rem;margin-top:.3rem;border:1px solid #cbd5e1;border-radius:.3rem;padding:.3rem;color:#334155;text-transform:none;letter-spacing:normal;font-size:.75rem;font-weight:400}}
+.column-filter-time{{box-sizing:border-box;width:100%;min-width:5rem;margin-top:.3rem;border:1px solid #cbd5e1;border-radius:.3rem;padding:.3rem;color:#334155;text-transform:none;letter-spacing:normal;font-size:.72rem;font-weight:400}}
+.test-filter-reset{{align-self:start;border:1px solid #cbd5e1;border-radius:.375rem;background:#fff;color:#334155;padding:.4rem .65rem;cursor:pointer}}
+.test-filter-reset:hover{{background:#f8fafc}}
+.test-filter-empty{{text-align:center;color:#64748b;padding:.75rem}}
 a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
 .empty{{text-align:center;padding:4rem;color:#94a3b8}}
 @media(max-width:640px){{
@@ -701,6 +711,7 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
             _selected = " selected" if _orig_idx == len(runs) - 1 else ""
             fh.write(f'<option value="{_orig_idx}"{_selected}>{esc(_label)}</option>\n')
         fh.write('</select>\n')
+        fh.write('<button type="button" class="test-filter-reset" id="reset-dashboard-preferences">Reset filters and selections</button>\n')
         fh.write('<div id="selected-run-tests"></div>\n')
         fh.write('<div id="run-detail" style="margin-top:.875rem"></div>\n')
         _runs_json = json.dumps(runs).replace('</', '<\\/')
@@ -711,12 +722,49 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
   var picker=document.getElementById('run-picker');
   var testsBox=document.getElementById('selected-run-tests');
   var detail=document.getElementById('run-detail');
-  var testsPerPage=30;
-  var currentPage=0;
+  var cookiePath=location.pathname.slice(0,location.pathname.lastIndexOf('/')+1)||'/';
+  var cookieName='testStatsPrefs_'+cookiePath.replace(/[^a-zA-Z0-9]/g,'_');
+  function readPrefs(){
+    var prefix=cookieName+'=',cookies=document.cookie.split(';');
+    for(var i=0;i<cookies.length;i++){
+      var item=cookies[i].trim();
+      if(item.indexOf(prefix)===0){
+        try{return JSON.parse(decodeURIComponent(item.slice(prefix.length)))||{};}catch(error){return {};}
+      }
+    }
+    return {};
+  }
+  var savedPrefs=readPrefs();
+  var allowedPageSizes=[30,50,100];
+  var allowedSortColumns=['priority','title','source','status','duration','change'];
+  var testsPerPage=allowedPageSizes.indexOf(Number(savedPrefs.testsPerPage))!==-1?Number(savedPrefs.testsPerPage):30;
+  var currentPage=Number.isInteger(savedPrefs.currentPage)&&savedPrefs.currentPage>=0?savedPrefs.currentPage:0;
+  var allTests=[];
   var currentTests=[];
-  var sortColumn='priority';
-  var sortDirection=1;
+  var timeThresholds={};
+  var sortColumn=allowedSortColumns.indexOf(savedPrefs.sortColumn)!==-1?savedPrefs.sortColumn:'priority';
+  var sortDirection=savedPrefs.sortDirection===-1?-1:1;
   function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+  function savePrefs(){
+    var name=document.getElementById('test-name-filter');
+    var latestPrefs=readPrefs();
+    var prefs={
+      testsPerPage:testsPerPage,
+      currentPage:currentPage,
+      sortColumn:sortColumn,
+      sortDirection:sortDirection,
+      testName:name?name.value:'',
+      timeFilter:document.getElementById('test-time-filter')?document.getElementById('test-time-filter').value:'all',
+      'test-filter-source':checkedValues('test-filter-source'),
+      'test-filter-status':checkedValues('test-filter-status'),
+      'test-filter-change':checkedValues('test-filter-change'),
+      aggPicker:latestPrefs.aggPicker||savedPrefs.aggPicker||'top'
+    };
+    var aggPicker=document.getElementById('agg-picker');
+    if(aggPicker&&['top','flaky','longest','retried'].indexOf(aggPicker.value)!==-1){prefs.aggPicker=aggPicker.value;}
+    document.cookie=cookieName+'='+encodeURIComponent(JSON.stringify(prefs))+'; Path='+cookiePath+'; Max-Age=31536000; SameSite=Lax';
+    savedPrefs=prefs;
+  }
   function fmtDur(ms){if(!ms)return '&mdash;';if(ms<1000)return Math.round(ms)+' ms';var s=ms/1000;if(s<60)return s.toFixed(0)+'s';return Math.floor(s/60)+'m '+Math.floor(s%60)+'s';}
   function fmtTestDur(ms){if(typeof ms!=='number'||ms<=0)return '&mdash;';if(ms<1000)return Math.round(ms)+' ms';if(ms<60000)return (ms/1000).toFixed(2)+' s';var s=ms/1000;return Math.floor(s/60)+'m '+(s%60).toFixed(1)+'s';}
   function shortName(t){var p=t.split('>').map(function(x){return x.trim();}).filter(Boolean);return p.length>=2?p.slice(-2).join(' › '):(p[p.length-1]||t);}
@@ -727,6 +775,77 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
   }
   function sourceLabel(test){
     return test.source_file||(['JUnit','NUnit','xUnit','VSTest'].includes(test.source)?'Additional':test.source||'');
+  }
+  function changeValue(test){
+    return test.change==='new'?'new':(test.change==='changed'?'changed':'unchanged');
+  }
+  function changeLabel(value){
+    return value==='new'?'New':(value==='changed'?'Changed':'Unchanged');
+  }
+  function checkboxFilter(className,values){
+    var title=className==='test-filter-source'?'Filter sources':(className==='test-filter-status'?'Filter statuses':'Filter changes');
+    return '<details class="column-filter"><summary>'+title+'</summary>'
+      +'<div class="column-filter-options">'+values.map(function(value){
+        var saved=savedPrefs[className];
+        var checked=Array.isArray(saved)?saved.indexOf(value)!==-1:true;
+        return '<label><input type="checkbox" class="'+className+'" value="'+esc(value)+'"'+(checked?' checked':'')+'>'+esc(className==='test-filter-change'?changeLabel(value):value)+'</label>';
+      }).join('')+'</div></details>';
+  }
+  function durationAtPercentile(durations,percentile){
+    return durations[Math.max(0,Math.ceil(durations.length*percentile)-1)];
+  }
+  function timeFilter(tests){
+    var durations=tests.map(function(test){return Number(test.duration_ms)||0;})
+      .filter(function(duration){return duration>0;}).sort(function(a,b){return a-b;});
+    var hasUntimed=tests.some(function(test){return !(Number(test.duration_ms)>0);});
+    var options=[{value:'all',label:'Any time'}];
+    timeThresholds={};
+    if(durations.length){
+      options.push({value:'timed',label:'Has timing data'});
+      timeThresholds.fastest25=durationAtPercentile(durations,.25);
+      timeThresholds.median=durationAtPercentile(durations,.5);
+      timeThresholds.slowest25=durationAtPercentile(durations,.75);
+      timeThresholds.slowest10=durationAtPercentile(durations,.9);
+      options.push({value:'fastest25',label:'Fastest 25% (≤ '+fmtTestDur(timeThresholds.fastest25)+')'});
+      options.push({value:'median',label:'At least median (≥ '+fmtTestDur(timeThresholds.median)+')'});
+      options.push({value:'slowest25',label:'Slowest 25% (≥ '+fmtTestDur(timeThresholds.slowest25)+')'});
+      options.push({value:'slowest10',label:'Slowest 10% (≥ '+fmtTestDur(timeThresholds.slowest10)+')'});
+    }
+    if(hasUntimed){options.push({value:'untimed',label:'No timing data'});}
+    var selected=savedPrefs.timeFilter||'all';
+    return '<select class="column-filter-time" id="test-time-filter" aria-label="Filter by execution time">'
+      +options.map(function(option){
+        return '<option value="'+option.value+'"'+(option.value===selected?' selected':'')+'>'+esc(option.label)+'</option>';
+      }).join('')+'</select>';
+  }
+  function checkedValues(className){
+    var inputs=testsBox.querySelectorAll('.'+className),values=[];
+    for(var i=0;i<inputs.length;i++){if(inputs[i].checked){values.push(inputs[i].value);}}
+    return values;
+  }
+  function applyTestFilters(resetPage){
+    var name=(document.getElementById('test-name-filter').value||'').trim().toLowerCase();
+    var sources=checkedValues('test-filter-source');
+    var statuses=checkedValues('test-filter-status');
+    var changes=checkedValues('test-filter-change');
+    var timeFilterValue=document.getElementById('test-time-filter').value||'all';
+    currentTests=allTests.filter(function(test){
+      var duration=Number(test.duration_ms)||0;
+      var matchesTime=timeFilterValue==='all'
+        ||(timeFilterValue==='timed'&&duration>0)
+        ||(timeFilterValue==='untimed'&&duration<=0)
+        ||(timeFilterValue==='fastest25'&&duration>0&&duration<=timeThresholds.fastest25)
+        ||(timeFilterValue==='median'&&duration>=timeThresholds.median)
+        ||(timeFilterValue==='slowest25'&&duration>=timeThresholds.slowest25)
+        ||(timeFilterValue==='slowest10'&&duration>=timeThresholds.slowest10);
+      return (!name||(test.title||'').toLowerCase().indexOf(name)!==-1)
+        &&sources.indexOf(sourceLabel(test))!==-1
+        &&statuses.indexOf(test.status||'unknown')!==-1
+        &&changes.indexOf(changeValue(test))!==-1
+        &&matchesTime;
+    }).sort(function(a,b){return compareTestValues(a,b,sortColumn);});
+    if(resetPage!==false){currentPage=0;}
+    renderTestPage();
   }
   function changeRank(test){
     return test.change==='new'?0:(test.change==='changed'?1:2);
@@ -791,6 +910,7 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
         +'<td>'+esc(sourceLabel(test))+'</td><td><span class="status-badge '+statusClass+'">'+esc(status)+'</span></td>'
         +'<td>'+fmtTestDur(test.duration_ms)+'</td><td>'+change+'</td></tr>';
     }
+    if(!currentTests.length){rows='<tr><td class="test-filter-empty" colspan="5">No tests match these filters.</td></tr>';}
     document.getElementById('all-tests-body').innerHTML=rows;
     document.getElementById('test-page-range').textContent='Showing '+(currentTests.length?start+1:0)+'-'+end+' of '+currentTests.length+' tests';
     document.getElementById('test-page-count').textContent='Page '+(currentPage+1)+' of '+pageCount;
@@ -798,11 +918,12 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
     document.getElementById('test-page-next').disabled=currentPage>=pageCount-1;
     var aggPicker=document.getElementById('agg-picker');
     if(aggPicker){aggPicker.dispatchEvent(new Event('change'));}
+    savePrefs();
   }
   function renderTests(run){
     var tests=run.tests||[];
-    currentTests=tests.slice().sort(function(a,b){return compareTestValues(a,b,sortColumn);});
-    currentPage=0;
+    allTests=tests.slice();
+    currentTests=allTests.slice().sort(function(a,b){return compareTestValues(a,b,sortColumn);});
     var counts={total:0,passed:0,failed:0,flaky:0,skipped:0};
     if(tests.length){
       counts.total=tests.length;
@@ -835,6 +956,9 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
       testsBox.innerHTML=html;
       return;
     }
+    var sources=Array.from(new Set(tests.map(sourceLabel))).sort(function(a,b){return a.localeCompare(b);});
+    var statuses=Array.from(new Set(tests.map(function(test){return test.status||'unknown';}))).sort();
+    var changes=Array.from(new Set(tests.map(changeValue))).sort(function(a,b){return ['new','changed','unchanged'].indexOf(a)-['new','changed','unchanged'].indexOf(b);});
     html+='<div class="test-pagination" aria-label="Test table pagination">'
       +'<button type="button" id="test-page-prev" aria-label="Previous test page">Prev</button>'
       +'<span id="test-page-range"></span><span id="test-page-count"></span>'
@@ -842,23 +966,31 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
       +'<label for="test-page-size">Tests per page</label><select id="test-page-size" aria-label="Tests per page">'
       +'<option value="30" selected>30</option><option value="50">50</option><option value="100">100</option></select></div>'
       +'<div class="table-scroll"><table class="all-tests"><thead><tr>'
-      +'<th aria-sort="none"><button type="button" data-sort="title" data-label="Test" aria-label="Sort by Test">Test</button></th>'
-      +'<th aria-sort="none"><button type="button" data-sort="source" data-label="Source" aria-label="Sort by Source">Source</button></th>'
-      +'<th aria-sort="none"><button type="button" data-sort="status" data-label="Status" aria-label="Sort by Status">Status</button></th>'
-      +'<th aria-sort="none"><button type="button" data-sort="duration" data-label="Execution time" aria-label="Sort by Execution time">Execution time</button></th>'
-      +'<th aria-sort="none"><button type="button" data-sort="change" data-label="Change" aria-label="Sort by Change">Change</button></th>'
+      +'<th aria-sort="none"><button type="button" data-sort="title" data-label="Test" aria-label="Sort by Test">Test</button>'
+      +'<input type="search" class="column-filter-name" id="test-name-filter" value="'+esc(savedPrefs.testName||'')+'" placeholder="Search"></th>'
+      +'<th aria-sort="none"><button type="button" data-sort="source" data-label="Source" aria-label="Sort by Source">Source</button>'
+      +checkboxFilter('test-filter-source',sources)+'</th>'
+      +'<th aria-sort="none"><button type="button" data-sort="status" data-label="Status" aria-label="Sort by Status">Status</button>'
+      +checkboxFilter('test-filter-status',statuses)+'</th>'
+      +'<th aria-sort="none"><button type="button" data-sort="duration" data-label="Execution time" aria-label="Sort by Execution time">Execution time</button>'
+      +timeFilter(tests)+'</th>'
+      +'<th aria-sort="none"><button type="button" data-sort="change" data-label="Change" aria-label="Sort by Change">Change</button>'
+      +checkboxFilter('test-filter-change',changes)+'</th>'
       +'</tr></thead><tbody id="all-tests-body"></tbody></table></div>';
     testsBox.innerHTML=html;
+    document.getElementById('test-page-size').value=String(testsPerPage);
+    var filterInputs=testsBox.querySelectorAll('.test-filter-source, .test-filter-status, .test-filter-change');
+    for(var i=0;i<filterInputs.length;i++){filterInputs[i].addEventListener('change',applyTestFilters);}
+    document.getElementById('test-name-filter').addEventListener('input',applyTestFilters);
+    document.getElementById('test-time-filter').addEventListener('change',applyTestFilters);
     var sortButtons=testsBox.querySelectorAll('.all-tests th button');
     for(var i=0;i<sortButtons.length;i++){
       sortButtons[i].addEventListener('click',function(){
         var column=this.getAttribute('data-sort');
         sortDirection=column===sortColumn?-sortDirection:1;
         sortColumn=column;
-        currentTests.sort(function(a,b){return compareTestValues(a,b,sortColumn);});
-        currentPage=0;
         updateSortHeaders();
-        renderTestPage();
+        applyTestFilters();
       });
     }
     updateSortHeaders();
@@ -869,7 +1001,7 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
       currentPage=0;
       renderTestPage();
     });
-    renderTestPage();
+    applyTestFilters(false);
   }
   function renderRun(run){
     if(!run){testsBox.innerHTML='';detail.innerHTML='';return;}
@@ -906,6 +1038,10 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
       html+='</ul>';}
     detail.innerHTML=html;
   }
+  document.getElementById('reset-dashboard-preferences').addEventListener('click',function(){
+    document.cookie=cookieName+'=; Path='+cookiePath+'; Max-Age=0; SameSite=Lax';
+    location.reload();
+  });
   picker.addEventListener('change',function(){renderRun(RUNS[parseInt(this.value,10)]);});
   renderRun(RUNS[parseInt(picker.value,10)]);
 })();
@@ -984,6 +1120,18 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
 (function(){
   var sel=document.getElementById('agg-picker');
   var box=document.getElementById('agg-detail');
+  var cookiePath=location.pathname.slice(0,location.pathname.lastIndexOf('/')+1)||'/';
+  var cookieName='testStatsPrefs_'+cookiePath.replace(/[^a-zA-Z0-9]/g,'_');
+  var prefs={};
+  var prefix=cookieName+'=',cookies=document.cookie.split(';');
+  for(var i=0;i<cookies.length;i++){
+    var item=cookies[i].trim();
+    if(item.indexOf(prefix)===0){
+      try{prefs=JSON.parse(decodeURIComponent(item.slice(prefix.length)))||{};}catch(error){prefs={};}
+      break;
+    }
+  }
+  if(['top','flaky','longest','retried'].indexOf(prefs.aggPicker)!==-1){sel.value=prefs.aggPicker;}
   function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
   function fmtDur(ms){if(!ms)return '&mdash;';if(ms<1000)return Math.round(ms)+' ms';var s=ms/1000;if(s<60)return s.toFixed(0)+'s';return Math.floor(s/60)+'m '+Math.floor(s%60)+'s';}
   function shortName(t){var p=t.split('>').map(function(x){return x.trim();}).filter(Boolean);return p.length>=2?p.slice(-2).join(' › '):(p[p.length-1]||t);}
@@ -1031,8 +1179,12 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
     box.innerHTML=html;
     highlightTests(v);
   }
-  sel.addEventListener('change',function(){render(this.value);});
-  render('top');
+  sel.addEventListener('change',function(){
+    render(this.value);
+    prefs.aggPicker=this.value;
+    document.cookie=cookieName+'='+encodeURIComponent(JSON.stringify(prefs))+'; Path='+cookiePath+'; Max-Age=31536000; SameSite=Lax';
+  });
+  render(sel.value);
 })();
 </script>
 ''')

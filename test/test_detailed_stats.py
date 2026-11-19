@@ -517,7 +517,7 @@ class DetailedStatsTests(unittest.TestCase):
             tests = [{
                 "title": f"test-{index:03d}",
                 "file": "tests/pagination.spec.js",
-                "tests": [{"status": "expected", "results": []}],
+                "tests": [{"status": "expected", "results": [{"duration": (index + 1) * 100}]}],
             } for index in range(65)]
             (results / "playwright.json").write_text(json.dumps({
                 "stats": {"expected": len(tests), "unexpected": 0, "flaky": 0, "skipped": 0, "duration": 0},
@@ -551,17 +551,44 @@ class DetailedStatsTests(unittest.TestCase):
                     const { runInNewContext } = require('vm');
                     const input = JSON.parse(process.argv[1]);
                     const controls = {};
+                    const tests = input.run.tests || [];
+                    const distinct = values => Array.from(new Set(values));
+                    const filterGroups = {
+                      'test-filter-source': distinct(tests.map(test =>
+                        test.source_file || (['JUnit', 'NUnit', 'xUnit', 'VSTest'].includes(test.source)
+                          ? 'Additional' : test.source || ''))).map(value => ({
+                            value, checked: true, addEventListener(name, callback) { this.listener = callback; }
+                          })),
+                      'test-filter-status': distinct(tests.map(test => test.status || 'unknown'))
+                        .map(value => ({
+                          value, checked: true, addEventListener(name, callback) { this.listener = callback; }
+                        })),
+                      'test-filter-change': distinct(tests.map(test =>
+                        test.change === 'new' ? 'new' : (test.change === 'changed' ? 'changed' : 'unchanged')))
+                        .map(value => ({
+                          value, checked: true, addEventListener(name, callback) { this.listener = callback; }
+                        }))
+                    };
+                    const allFilters = Object.values(filterGroups).flat();
                     function control(id) {
                       return controls[id] || (controls[id] = {
                         innerHTML: '',
                         textContent: '',
-                        value: '0',
+                        value: id === 'run-picker' ? '0' : (id === 'test-time-filter' ? 'all' : ''),
                         disabled: false,
                         listeners: {},
                         addEventListener(name, callback) { this.listeners[name] = callback; },
                         dispatchEvent() {},
                         setAttribute() {},
-                        querySelectorAll() { return buttons; }
+                        querySelectorAll(selector) {
+                          if (selector === '.test-filter-source, .test-filter-status, .test-filter-change') {
+                            return allFilters;
+                          }
+                          for (const name of Object.keys(filterGroups)) {
+                            if (selector === '.' + name) return filterGroups[name];
+                          }
+                          return buttons;
+                        }
                       });
                     }
                     const buttons = ['title', 'source', 'status', 'duration', 'change'].map(column => ({
@@ -576,14 +603,20 @@ class DetailedStatsTests(unittest.TestCase):
                       setAttribute() {}
                     }));
                     const document = {
+                      cookie: '',
                       getElementById: control,
                       querySelectorAll(selector) {
                         return selector === '.all-tests th' ? headers : [];
                       }
                     };
+                    const location = {
+                      pathname: '/owner/repo/stats/',
+                      reload() { this.didReload = true; }
+                    };
                     runInNewContext(input.script, {
                       document,
                       RUNS: [input.run],
+                      location,
                       Event: function Event(name) { this.type = name; }
                     });
                     const page = () => ({
@@ -606,17 +639,51 @@ class DetailedStatsTests(unittest.TestCase):
                     buttons[0].listener.call(buttons[0]);
                     buttons[0].listener.call(buttons[0]);
                     const sortedDescending = page();
+                    const name = control('test-name-filter');
+                    name.value = 'test-064';
+                    name.listeners.input();
+                    const searched = page();
+                    const timeFilter = control('test-time-filter');
+                    timeFilter.value = 'slowest10';
+                    timeFilter.listeners.change();
+                    const prefs = JSON.parse(decodeURIComponent(document.cookie.split(';')[0].split('=').slice(1).join('=')));
+                    name.value = '';
+                    name.listeners.input();
+                    const slowOnly = page();
+                    timeFilter.value = 'all';
+                    timeFilter.listeners.change();
+                    const source = filterGroups['test-filter-source'][0];
+                    source.checked = false;
+                    source.listener();
+                    const noSource = page();
+                    source.checked = true;
+                    source.listener();
+                    const status = filterGroups['test-filter-status'][0];
+                    status.checked = false;
+                    status.listener();
+                    const noStatus = page();
+                    status.checked = true;
+                    status.listener();
+                    const change = filterGroups['test-filter-change'][0];
+                    change.checked = false;
+                    change.listener();
+                    const noChange = page();
+                    control('reset-dashboard-preferences').listeners.click();
                     process.stdout.write(JSON.stringify({
-                      first, second, third, previous, resized, sortedDescending
+                      first, second, third, previous, resized, sortedDescending, searched, slowOnly,
+                      noSource, noStatus, noChange, prefs,
+                      resetCookie: document.cookie, resetReloaded: location.didReload,
+                      columnHtml: control('selected-run-tests').innerHTML
                     }));
                 """, json.dumps({
                     "script": dashboard[script_start:script_end],
                     "run": run,
                 })],
-                check=True,
+                check=False,
                 capture_output=True,
                 text=True,
             )
+            self.assertEqual(result.returncode, 0, result.stderr)
             pages = json.loads(result.stdout)
             self.assertEqual(pages["first"]["range"], "Showing 1-30 of 65 tests")
             self.assertEqual(pages["first"]["count"], "Page 1 of 3")
@@ -636,6 +703,30 @@ class DetailedStatsTests(unittest.TestCase):
             self.assertEqual(pages["resized"]["range"], "Showing 1-50 of 65 tests")
             self.assertEqual(len(pages["resized"]["titles"]), 50)
             self.assertEqual(pages["sortedDescending"]["titles"][0], "pagination > test-064")
+            self.assertEqual(pages["searched"]["titles"], ["pagination > test-064"])
+            self.assertEqual(pages["slowOnly"]["range"], "Showing 1-7 of 7 tests")
+            self.assertEqual(pages["slowOnly"]["titles"], [
+                f"pagination > test-{index:03d}" for index in range(64, 57, -1)
+            ])
+            self.assertEqual(pages["prefs"]["testsPerPage"], 50)
+            self.assertEqual(pages["prefs"]["sortColumn"], "title")
+            self.assertEqual(pages["prefs"]["sortDirection"], -1)
+            self.assertEqual(pages["prefs"]["testName"], "test-064")
+            self.assertEqual(pages["prefs"]["timeFilter"], "slowest10")
+            self.assertNotIn("runIndex", pages["prefs"])
+            durations = sorted(test["duration_ms"] for test in run["tests"])
+            slowest_10_threshold = durations[(len(durations) * 9 + 9) // 10 - 1]
+            self.assertIn(
+                f"Slowest 10% (≥ {slowest_10_threshold / 1000:.2f} s)",
+                pages["columnHtml"],
+            )
+            self.assertIn('id="test-name-filter"', pages["columnHtml"])
+            self.assertIn('id="reset-dashboard-preferences"', dashboard)
+            self.assertEqual(pages["noSource"]["range"], "Showing 0-0 of 0 tests")
+            self.assertEqual(pages["noStatus"]["range"], "Showing 0-0 of 0 tests")
+            self.assertEqual(pages["noChange"]["range"], "Showing 0-0 of 0 tests")
+            self.assertIn("Max-Age=0", pages["resetCookie"])
+            self.assertTrue(pages["resetReloaded"])
 
     def test_records_shell_failure_when_playwright_results_are_unavailable(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -859,10 +950,15 @@ class DetailedStatsTests(unittest.TestCase):
                     };
                     const box = { innerHTML: '' };
                     const document = {
+                      cookie: '',
                       getElementById(name) { return name === 'agg-picker' ? picker : box; },
                       querySelectorAll() { return rows; }
                     };
-                    runInNewContext(input.script, { document, AGG: input.trends });
+                    runInNewContext(input.script, {
+                      document,
+                      AGG: input.trends,
+                      location: { pathname: '/owner/repo/stats/' }
+                    });
                     const highlighted = () => rows
                       .filter(row => row.classes.has('test-trend-match'))
                       .map(row => row.getAttribute('data-test-title'));
