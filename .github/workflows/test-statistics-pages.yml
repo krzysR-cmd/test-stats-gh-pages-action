@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  pages: read
 
 jobs:
   build:
@@ -57,8 +58,12 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
 
       - name: Link test statistics in workflow summary
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
-          printf '[View test statistics dashboard](https://raczeja.github.io/test-stats-gh-pages-action/stats/)\n' \
+          pages_url=$(gh api "repos/${GITHUB_REPOSITORY}/pages" --jq .html_url)
+          printf '[View test statistics dashboard](%s/stats/)\n' "${pages_url%/}" \
             >> "$GITHUB_STEP_SUMMARY"
 
       - name: Add Pages landing page

@@ -110,8 +110,26 @@ class DetailedStatsTests(unittest.TestCase):
                 (1, 1, 1),
             )
             self.assertEqual(tests["Tests.Pass"]["source"], "VSTest")
+            self.assertEqual(tests["Tests.Pass"]["source_file"], "Ocaramba.Tests.Features.xml")
             self.assertEqual(tests["Tests.Pass"]["duration_ms"], 125)
             self.assertEqual(run["shell_failed_tests"][0]["error"], "broken")
+            self.assertEqual(
+                run["shell_failed_tests"][0]["source_file"],
+                "Ocaramba.Tests.Features.xml",
+            )
+            dashboard = (site / "stats" / "index.html").read_text()
+            self.assertIn("function sourceLabel(test)", dashboard)
+            self.assertIn("sourceLabel(test)", dashboard)
+            self.assertIn("Ocaramba.Tests.Features.xml", dashboard)
+            self.assertIn("Test results (all configured sources)", dashboard)
+            self.assertIn(
+                '<div class="stat-box"><div class="stat-val">2</div>'
+                '<div class="stat-lbl">Avg tests/run</div></div>',
+                dashboard,
+            )
+            self.assertIn('66.7% pass rate', dashboard)
+            self.assertIn("Failure details ('+failures.length+')", dashboard)
+            self.assertIn("failure.error||'No failure message provided.'", dashboard)
 
     def test_reads_nunit_and_xunit_xml_as_supplemental_results(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -163,11 +181,16 @@ class DetailedStatsTests(unittest.TestCase):
                 (3, 2, 3),
             )
             self.assertEqual(tests["NUnit3.Pass"]["source"], "NUnit")
+            self.assertEqual(tests["NUnit3.Pass"]["source_file"], "nunit3.xml")
             self.assertEqual(tests["Xunit.Pass"]["source"], "xUnit")
+            self.assertEqual(tests["Xunit.Pass"]["source_file"], "xunit.xml")
             self.assertEqual(
                 {test["error"] for test in run["shell_failed_tests"]},
                 {"nunit failure", "xunit failure"},
             )
+            dashboard = (site / "stats" / "index.html").read_text()
+            self.assertIn("nunit failure", dashboard)
+            self.assertIn("xunit failure", dashboard)
 
     def test_expands_junit_glob_and_uses_report_name_in_dashboard_title(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -460,9 +483,11 @@ class DetailedStatsTests(unittest.TestCase):
             self.assertIn("failure detail", run["failed_tests"][0]["error"])
             playwright_tests = {test["title"]: test for test in run["tests"] if test["source"] == "Playwright"}
             self.assertEqual(playwright_tests["suite > fails"]["duration_ms"], 300)
+            self.assertEqual(playwright_tests["suite > fails"]["source_file"], "playwright.json")
             self.assertEqual(playwright_tests["suite > retries"]["duration_ms"], 900)
             junit_tests = {test["title"]: test for test in run["tests"] if test["source"] == "JUnit"}
             self.assertEqual(junit_tests["syntax > pass"]["duration_ms"], 125)
+            self.assertEqual(junit_tests["syntax > pass"]["source_file"], "shell.xml")
             self.assertEqual(junit_tests["syntax > fail"]["duration_ms"], 500)
             self.assertEqual(junit_tests["syntax > skip"]["duration_ms"], 0)
             self.assertIn("Test trends (last 30 days)", dashboard)
@@ -479,7 +504,7 @@ class DetailedStatsTests(unittest.TestCase):
             self.assertIn("else if(v==='longest')", dashboard)
             self.assertIn("else if(v==='retried')", dashboard)
             self.assertIn("shell failure", run["shell_failed_tests"][0]["error"])
-            self.assertIn("JSON test results", dashboard)
+            self.assertIn("Test results (all configured sources)", dashboard)
             self.assertNotIn("Additional test results", dashboard)
             self.assertNotIn("JUnit-format test results", dashboard)
             self.assertNotIn("Failed shell tests", dashboard)
@@ -490,7 +515,7 @@ class DetailedStatsTests(unittest.TestCase):
             results = root / "results"
             results.mkdir()
             tests = [{
-                "title": f"test-{index}",
+                "title": f"test-{index:03d}",
                 "file": "tests/pagination.spec.js",
                 "tests": [{"status": "expected", "results": []}],
             } for index in range(65)]
@@ -513,29 +538,104 @@ class DetailedStatsTests(unittest.TestCase):
             })
             subprocess.run(["bash", str(SCRIPT)], check=True, env=env, capture_output=True, text=True)
             dashboard = (site / "stats" / "index.html").read_text()
-
-            self.assertIn("var testsPerPage=30;", dashboard)
-            self.assertIn("Math.ceil(currentTests.length/testsPerPage)", dashboard)
-            self.assertIn("Showing '+(currentTests.length?start+1:0)+'-'+end+' of '+currentTests.length+' tests'", dashboard)
-            self.assertIn("Page '+(currentPage+1)+' of '+pageCount", dashboard)
-            self.assertIn('aria-label="Previous test page">Prev', dashboard)
-            self.assertIn('aria-label="Next test page">Next', dashboard)
-            self.assertIn('<option value="30" selected>30</option><option value="50">50</option><option value="100">100</option>', dashboard)
-            self.assertIn("currentPage--;renderTestPage()", dashboard)
-            self.assertIn("currentPage++;renderTestPage()", dashboard)
-            self.assertIn("testsPerPage=parseInt(this.value,10)", dashboard)
-            self.assertIn("var start=currentPage*testsPerPage,end=Math.min(start+testsPerPage,currentTests.length)", dashboard)
-            self.assertIn('"title": "pagination > test-64"', dashboard)
-            self.assertIn("var sortColumn='priority';", dashboard)
-            self.assertIn("var ranks={failed:0,flaky:1,passed:2,skipped:3};", dashboard)
-            self.assertIn("return test.change==='new'?0:(test.change==='changed'?1:2);", dashboard)
-            self.assertIn("currentTests=tests.slice().sort", dashboard)
-            self.assertIn("data-sort=\"title\"", dashboard)
-            self.assertIn("data-sort=\"source\"", dashboard)
-            self.assertIn("data-sort=\"status\"", dashboard)
-            self.assertIn("data-sort=\"duration\"", dashboard)
-            self.assertIn("data-sort=\"change\"", dashboard)
-            self.assertIn("sortDirection=column===sortColumn?-sortDirection:1;", dashboard)
+            run = json.loads((site / "stats" / "runs.json").read_text())["runs"][0]
+            node = shutil.which("node")
+            if node is None:
+                self.skipTest("Node.js is required to exercise dashboard behavior")
+            script_start = dashboard.index(
+                "<script>\n(function(){\n  var picker=document.getElementById('run-picker');"
+            ) + len("<script>")
+            script_end = dashboard.index("</script>", script_start)
+            result = subprocess.run(
+                [node, "-e", """
+                    const { runInNewContext } = require('vm');
+                    const input = JSON.parse(process.argv[1]);
+                    const controls = {};
+                    function control(id) {
+                      return controls[id] || (controls[id] = {
+                        innerHTML: '',
+                        textContent: '',
+                        value: '0',
+                        disabled: false,
+                        listeners: {},
+                        addEventListener(name, callback) { this.listeners[name] = callback; },
+                        dispatchEvent() {},
+                        setAttribute() {},
+                        querySelectorAll() { return buttons; }
+                      });
+                    }
+                    const buttons = ['title', 'source', 'status', 'duration', 'change'].map(column => ({
+                      attributes: { 'data-sort': column, 'data-label': column },
+                      getAttribute(name) { return this.attributes[name]; },
+                      setAttribute(name, value) { this.attributes[name] = value; },
+                      addEventListener(name, callback) { this.listener = callback; },
+                      textContent: ''
+                    }));
+                    const headers = buttons.map(button => ({
+                      querySelector() { return button; },
+                      setAttribute() {}
+                    }));
+                    const document = {
+                      getElementById: control,
+                      querySelectorAll(selector) {
+                        return selector === '.all-tests th' ? headers : [];
+                      }
+                    };
+                    runInNewContext(input.script, {
+                      document,
+                      RUNS: [input.run],
+                      Event: function Event(name) { this.type = name; }
+                    });
+                    const page = () => ({
+                      titles: Array.from(control('all-tests-body').innerHTML.matchAll(/data-test-title="([^"]*)"/g),
+                        match => match[1].replace(/&gt;/g, '>')),
+                      range: control('test-page-range').textContent,
+                      count: control('test-page-count').textContent
+                    });
+                    const first = page();
+                    control('test-page-next').listeners.click();
+                    const second = page();
+                    control('test-page-next').listeners.click();
+                    const third = page();
+                    control('test-page-prev').listeners.click();
+                    const previous = page();
+                    const size = control('test-page-size');
+                    size.value = '50';
+                    size.listeners.change.call(size);
+                    const resized = page();
+                    buttons[0].listener.call(buttons[0]);
+                    buttons[0].listener.call(buttons[0]);
+                    const sortedDescending = page();
+                    process.stdout.write(JSON.stringify({
+                      first, second, third, previous, resized, sortedDescending
+                    }));
+                """, json.dumps({
+                    "script": dashboard[script_start:script_end],
+                    "run": run,
+                })],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            pages = json.loads(result.stdout)
+            self.assertEqual(pages["first"]["range"], "Showing 1-30 of 65 tests")
+            self.assertEqual(pages["first"]["count"], "Page 1 of 3")
+            self.assertEqual(pages["first"]["titles"], [
+                f"pagination > test-{index:03d}" for index in range(30)
+            ])
+            self.assertEqual(pages["second"]["range"], "Showing 31-60 of 65 tests")
+            self.assertEqual(pages["second"]["titles"], [
+                f"pagination > test-{index:03d}" for index in range(30, 60)
+            ])
+            self.assertEqual(pages["third"]["range"], "Showing 61-65 of 65 tests")
+            self.assertEqual(pages["third"]["count"], "Page 3 of 3")
+            self.assertEqual(pages["third"]["titles"], [
+                f"pagination > test-{index:03d}" for index in range(60, 65)
+            ])
+            self.assertEqual(pages["previous"]["range"], "Showing 31-60 of 65 tests")
+            self.assertEqual(pages["resized"]["range"], "Showing 1-50 of 65 tests")
+            self.assertEqual(len(pages["resized"]["titles"]), 50)
+            self.assertEqual(pages["sortedDescending"]["titles"][0], "pagination > test-064")
 
     def test_records_shell_failure_when_playwright_results_are_unavailable(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -627,7 +727,7 @@ class DetailedStatsTests(unittest.TestCase):
                 dashboard,
             )
             self.assertIn(
-                "run.shell_failed+' failure(s); individual test details were not saved for this run.",
+                "((run.failed||0)+(run.shell_failed||0))+' failure(s); individual test details were not saved for this run.",
                 dashboard,
             )
 
@@ -782,7 +882,7 @@ class DetailedStatsTests(unittest.TestCase):
             highlights = json.loads(result.stdout)
             self.assertEqual(
                 set(highlights["top"]),
-                {f"trends > failed-{index}" for index in range(1, 7)},
+                {title for title, _ in trends["top"]},
             )
             self.assertEqual(
                 set(highlights["flaky"]),
