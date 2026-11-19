@@ -25,7 +25,7 @@ inputs:
     required: false
     default: ""
   dashboard-url:
-    description: Published URL of the test statistics dashboard to link in the GitHub Actions summary.
+    description: Override the discovered GitHub Pages dashboard URL used in the GitHub Actions summary.
     required: false
     default: ""
   detailed-statistics:
@@ -70,6 +70,7 @@ runs:
         INPUT_STATS_SUBDIRECTORY: ${{ inputs.stats-subdirectory }}
         INPUT_REPORT_NAME: ${{ inputs.report-name }}
         INPUT_DASHBOARD_URL: ${{ inputs.dashboard-url }}
+        GITHUB_TOKEN: ${{ github.token }}
       run: python3 "${{ github.action_path }}/src/main.py"
     - name: Generate detailed 30-day dashboard
       if: inputs.detailed-statistics == 'true'
