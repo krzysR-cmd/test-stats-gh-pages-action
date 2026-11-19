@@ -63,6 +63,67 @@ class DetailedStatsTests(unittest.TestCase):
             self.assertNotIn("Total failures", dashboard)
             self.assertNotIn("Total flaky", dashboard)
 
+    def test_run_picker_pages_through_runs_in_batches_of_20(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            results = root / "results"
+            results.mkdir()
+            site = root / "site"
+            stats = site / "stats"
+            stats.mkdir(parents=True)
+            now = dt.datetime.now(dt.timezone.utc)
+            prior_runs = [{
+                "run_id": str(number),
+                "run_url": f"https://github.com/owner/repo/actions/runs/{number}",
+                "timestamp": (now - dt.timedelta(days=26 - number)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "total": 1,
+                "passed": 1,
+                "failed": 0,
+                "skipped": 0,
+                "flaky_count": 0,
+                "duration_ms": 0,
+                "slowest_tests": [],
+                "failed_tests": [],
+                "flaky_tests": [],
+                "tests": [],
+                "shell_passed": 0,
+                "shell_failed": 0,
+                "shell_skipped": 0,
+                "shell_failed_tests": [],
+            } for number in range(1, 26)]
+            (stats / "runs.json").write_text(json.dumps({"runs": prior_runs}))
+            env = os.environ.copy()
+            env.update({
+                "RESULTS_DIR": str(results),
+                "SITE_DIR": str(site),
+                "GITHUB_RUN_NUMBER": "26",
+                "GITHUB_RUN_ID": "run-26",
+                "GITHUB_SERVER_URL": "https://github.com",
+                "GITHUB_REPOSITORY": "owner/repo",
+            })
+            subprocess.run(
+                ["bash", str(SCRIPT)],
+                check=True,
+                env=env,
+                capture_output=True,
+                text=True,
+            )
+
+            dashboard = (stats / "index.html").read_text()
+            picker_start = dashboard.index('<select id="run-picker"')
+            picker_end = dashboard.index("</select>", picker_start)
+            options = [
+                line for line in dashboard[picker_start:picker_end].splitlines()
+                if "<option value=" in line
+            ]
+            self.assertEqual(len(options), 20)
+            self.assertTrue(options[0].startswith('<option value="25" selected>'))
+            self.assertIn('<option value="6"', options[-1])
+            self.assertFalse(any('value="5"' in option for option in options))
+            self.assertIn('id="run-page-prev"', dashboard)
+            self.assertIn('id="run-page-next"', dashboard)
+            self.assertIn('id="run-page-range"', dashboard)
+
     def test_reads_vstest_trx_as_supplemental_test_results(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

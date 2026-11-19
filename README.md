@@ -100,11 +100,13 @@ It creates/updates:
   from that run's measured durations (fastest/slowest percentiles and whether
   timing data is available). Filters apply before sorting and pagination and
   refresh when another run is selected.
-  The latest run is selected by default whenever the dashboard loads. Filters,
-  pagination, sorting, and trend selection are remembered in a site-scoped
-  cookie. A reset control clears saved preferences and restores defaults. The
-  table is paginated with 30 tests per page by default,
-  selectable sizes of 30, 50, or 100, Prev/Next controls, a displayed range,
+  The latest run is selected by default whenever the dashboard loads. The run
+  selector shows at most 20 runs at a time, with Newer/Older controls to page
+  through the remaining runs. Filters, pagination, sorting, and trend selection
+  are remembered in a site-scoped cookie. A reset control clears saved
+  preferences and restores defaults. The table is paginated with 30 tests per
+  page by default, selectable sizes of 30, 50, or 100, Prev/Next controls, a
+  displayed range,
   and a page count. It marks new tests and status changes against the previous
   run, and includes failures from each configured result source in the Top
   failing Test trends view. Selecting Top failing tests highlights every failed

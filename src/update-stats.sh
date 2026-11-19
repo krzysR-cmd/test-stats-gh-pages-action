@@ -646,9 +646,9 @@ td:last-child{{text-align:right;font-weight:700;color:#dc2626;white-space:nowrap
 .change-new{{background:#dbeafe;color:#1d4ed8}}
 .change-updated{{background:#ffedd5;color:#c2410c}}
 #all-tests-body tr.test-trend-match td{{background:#fef3c7}}
-.test-pagination{{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:.6rem;margin:.75rem 0;font-size:.78rem;color:#64748b}}
-.test-pagination button{{border:1px solid #cbd5e1;border-radius:.375rem;background:#fff;color:#334155;padding:.3rem .6rem;cursor:pointer}}
-.test-pagination button:disabled{{color:#94a3b8;background:#f8fafc;cursor:not-allowed}}
+.test-pagination,.run-pagination{{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:.6rem;margin:.75rem 0;font-size:.78rem;color:#64748b}}
+.test-pagination button,.run-pagination button{{border:1px solid #cbd5e1;border-radius:.375rem;background:#fff;color:#334155;padding:.3rem .6rem;cursor:pointer}}
+.test-pagination button:disabled,.run-pagination button:disabled{{color:#94a3b8;background:#f8fafc;cursor:not-allowed}}
 .test-pagination select{{border:1px solid #cbd5e1;border-radius:.375rem;background:#fff;color:#334155;padding:.3rem}}
 .all-tests th{{vertical-align:top;min-width:5rem}}
 .column-filter{{margin-top:.3rem;text-transform:none;letter-spacing:normal;font-size:.72rem;font-weight:400}}
@@ -697,7 +697,7 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
         # Select a run before showing its test list; newest run is selected by default.
         fh.write('<div class="section-lbl">Tests in selected run</div>\n')
         fh.write('<select id="run-picker" style="font-size:.8rem;padding:.35rem .6rem;border:1px solid #e2e8f0;border-radius:.4rem;background:#fff;color:#374151;width:100%;max-width:42rem;cursor:pointer">\n')
-        for _i, _run in enumerate(reversed(runs)):
+        for _i, _run in enumerate(reversed(runs[-20:])):
             _orig_idx = len(runs) - 1 - _i
             _ts = _run["timestamp"][:16].replace("T", " ")
             _fail = _run.get("failed", 0) + _run.get("shell_failed", 0)
@@ -711,6 +711,10 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
             _selected = " selected" if _orig_idx == len(runs) - 1 else ""
             fh.write(f'<option value="{_orig_idx}"{_selected}>{esc(_label)}</option>\n')
         fh.write('</select>\n')
+        fh.write('<div class="run-pagination" aria-label="Run selector pagination">'
+                 '<button type="button" id="run-page-prev" aria-label="Newer runs" disabled>Newer</button>'
+                 '<span id="run-page-range"></span>'
+                 '<button type="button" id="run-page-next" aria-label="Older runs">Older</button></div>\n')
         fh.write('<button type="button" class="test-filter-reset" id="reset-dashboard-preferences">Reset filters and selections</button>\n')
         fh.write('<div id="selected-run-tests"></div>\n')
         fh.write('<div id="run-detail" style="margin-top:.875rem"></div>\n')
@@ -720,8 +724,13 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
 <script>
 (function(){
   var picker=document.getElementById('run-picker');
+  var runPagePrev=document.getElementById('run-page-prev');
+  var runPageNext=document.getElementById('run-page-next');
+  var runPageRange=document.getElementById('run-page-range');
   var testsBox=document.getElementById('selected-run-tests');
   var detail=document.getElementById('run-detail');
+  var runPageSize=20;
+  var runPage=0;
   var cookiePath=location.pathname.slice(0,location.pathname.lastIndexOf('/')+1)||'/';
   var cookieName='testStatsPrefs_'+cookiePath.replace(/[^a-zA-Z0-9]/g,'_');
   function readPrefs(){
@@ -1038,12 +1047,42 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
       html+='</ul>';}
     detail.innerHTML=html;
   }
+  function runLabel(run){
+    var ts=(run.timestamp||'').slice(0,16).replace('T',' ');
+    var failed=(run.failed||0)+(run.shell_failed||0);
+    var status=failed===0?'✓':'✗';
+    return status+' Run #'+run.run_id+' — '+ts+'Z'
+      +' — '+((run.passed||0)+(run.shell_passed||0))+'p / '+failed+'f'
+      +' / '+(run.flaky_count||0)+' flaky'
+      +' / '+((run.skipped||0)+(run.shell_skipped||0))+' skipped';
+  }
+  function renderRunPage(page,selectedIndex){
+    var pageCount=Math.ceil(RUNS.length/runPageSize);
+    runPage=Math.max(0,Math.min(page,pageCount-1));
+    var newestIndex=RUNS.length-1-runPage*runPageSize;
+    var oldestIndex=Math.max(0,newestIndex-runPageSize+1);
+    var options=[];
+    for(var i=newestIndex;i>=oldestIndex;i--){
+      options.push('<option value="'+i+'">'+esc(runLabel(RUNS[i]))+'</option>');
+    }
+    picker.innerHTML=options.join('');
+    if(selectedIndex<oldestIndex||selectedIndex>newestIndex){selectedIndex=newestIndex;}
+    picker.value=String(selectedIndex);
+    var firstRun=runPage*runPageSize+1;
+    var lastRun=firstRun+(newestIndex-oldestIndex);
+    runPageRange.textContent='Runs '+firstRun+'-'+lastRun+' of '+RUNS.length+' (newest first)';
+    runPagePrev.disabled=runPage===0;
+    runPageNext.disabled=runPage>=pageCount-1;
+    renderRun(RUNS[selectedIndex]);
+  }
   document.getElementById('reset-dashboard-preferences').addEventListener('click',function(){
     document.cookie=cookieName+'=; Path='+cookiePath+'; Max-Age=0; SameSite=Lax';
     location.reload();
   });
   picker.addEventListener('change',function(){renderRun(RUNS[parseInt(this.value,10)]);});
-  renderRun(RUNS[parseInt(picker.value,10)]);
+  runPagePrev.addEventListener('click',function(){renderRunPage(runPage-1,-1);});
+  runPageNext.addEventListener('click',function(){renderRunPage(runPage+1,-1);});
+  renderRunPage(0,RUNS.length-1);
 })();
 </script>
 ''')
