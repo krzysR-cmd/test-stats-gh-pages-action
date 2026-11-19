@@ -650,17 +650,13 @@ td:last-child{{text-align:right;font-weight:700;color:#dc2626;white-space:nowrap
 .test-pagination button{{border:1px solid #cbd5e1;border-radius:.375rem;background:#fff;color:#334155;padding:.3rem .6rem;cursor:pointer}}
 .test-pagination button:disabled{{color:#94a3b8;background:#f8fafc;cursor:not-allowed}}
 .test-pagination select{{border:1px solid #cbd5e1;border-radius:.375rem;background:#fff;color:#334155;padding:.3rem}}
-.test-filters{{display:grid;grid-template-columns:repeat(auto-fit,minmax(12rem,1fr));gap:.75rem;margin:.75rem 0}}
-.test-filter-group{{border:1px solid #e2e8f0;border-radius:.4rem;padding:.45rem .6rem;margin:0;min-width:0}}
-.test-filter-group legend{{font-size:.72rem;font-weight:700;color:#64748b;padding:0 .2rem}}
-.test-filter-options{{display:flex;flex-wrap:wrap;gap:.35rem .65rem;max-height:6rem;overflow:auto}}
-.test-filter-options label,.test-filter-time label{{font-size:.76rem;color:#475569;display:inline-flex;align-items:center;gap:.25rem}}
-.test-filter-name{{grid-column:1/-1}}
-.test-filter-name input,.test-filter-time input{{box-sizing:border-box;border:1px solid #cbd5e1;border-radius:.3rem;padding:.35rem .45rem;color:#334155}}
-.test-filter-name input{{width:100%;margin-top:.25rem}}
-.test-filter-time-fields{{display:flex;gap:.5rem}}
-.test-filter-time-fields label{{flex:1;display:block}}
-.test-filter-time input{{width:100%;margin-top:.2rem}}
+.all-tests th{{vertical-align:top;min-width:5rem}}
+.column-filter{{margin-top:.3rem;text-transform:none;letter-spacing:normal;font-size:.72rem;font-weight:400}}
+.column-filter summary{{cursor:pointer;color:#64748b;text-transform:none;white-space:nowrap}}
+.column-filter-options{{display:flex;flex-direction:column;gap:.2rem;max-height:5rem;overflow:auto;margin-top:.25rem;text-transform:none}}
+.column-filter-options label{{display:inline-flex;align-items:center;gap:.25rem;font-size:.72rem;font-weight:400;color:#475569;text-transform:none;white-space:normal}}
+.column-filter-name{{box-sizing:border-box;width:100%;min-width:4rem;margin-top:.3rem;border:1px solid #cbd5e1;border-radius:.3rem;padding:.3rem;color:#334155;text-transform:none;letter-spacing:normal;font-size:.75rem;font-weight:400}}
+.column-filter-time{{box-sizing:border-box;width:100%;min-width:5rem;margin-top:.3rem;border:1px solid #cbd5e1;border-radius:.3rem;padding:.3rem;color:#334155;text-transform:none;letter-spacing:normal;font-size:.72rem;font-weight:400}}
 .test-filter-reset{{align-self:start;border:1px solid #cbd5e1;border-radius:.375rem;background:#fff;color:#334155;padding:.4rem .65rem;cursor:pointer}}
 .test-filter-reset:hover{{background:#f8fafc}}
 .test-filter-empty{{text-align:center;color:#64748b;padding:.75rem}}
@@ -745,13 +741,12 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
   var currentPage=Number.isInteger(savedPrefs.currentPage)&&savedPrefs.currentPage>=0?savedPrefs.currentPage:0;
   var allTests=[];
   var currentTests=[];
+  var timeThresholds={};
   var sortColumn=allowedSortColumns.indexOf(savedPrefs.sortColumn)!==-1?savedPrefs.sortColumn:'priority';
   var sortDirection=savedPrefs.sortDirection===-1?-1:1;
   function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
   function savePrefs(){
     var name=document.getElementById('test-name-filter');
-    var minTime=document.getElementById('test-time-min');
-    var maxTime=document.getElementById('test-time-max');
     var latestPrefs=readPrefs();
     var prefs={
       testsPerPage:testsPerPage,
@@ -759,8 +754,7 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
       sortColumn:sortColumn,
       sortDirection:sortDirection,
       testName:name?name.value:'',
-      minTime:minTime?minTime.value:'',
-      maxTime:maxTime?maxTime.value:'',
+      timeFilter:document.getElementById('test-time-filter')?document.getElementById('test-time-filter').value:'all',
       'test-filter-source':checkedValues('test-filter-source'),
       'test-filter-status':checkedValues('test-filter-status'),
       'test-filter-change':checkedValues('test-filter-change'),
@@ -789,12 +783,40 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
     return value==='new'?'New':(value==='changed'?'Changed':'Unchanged');
   }
   function checkboxFilter(className,values){
-    return '<fieldset class="test-filter-group"><legend>'+esc(className==='test-filter-source'?'Source':(className==='test-filter-status'?'Status':'Change'))+'</legend>'
-      +'<div class="test-filter-options">'+values.map(function(value){
+    var title=className==='test-filter-source'?'Filter sources':(className==='test-filter-status'?'Filter statuses':'Filter changes');
+    return '<details class="column-filter"><summary>'+title+'</summary>'
+      +'<div class="column-filter-options">'+values.map(function(value){
         var saved=savedPrefs[className];
         var checked=Array.isArray(saved)?saved.indexOf(value)!==-1:true;
         return '<label><input type="checkbox" class="'+className+'" value="'+esc(value)+'"'+(checked?' checked':'')+'>'+esc(className==='test-filter-change'?changeLabel(value):value)+'</label>';
-      }).join('')+'</div></fieldset>';
+      }).join('')+'</div></details>';
+  }
+  function durationAtPercentile(durations,percentile){
+    return durations[Math.max(0,Math.ceil(durations.length*percentile)-1)];
+  }
+  function timeFilter(tests){
+    var durations=tests.map(function(test){return Number(test.duration_ms)||0;})
+      .filter(function(duration){return duration>0;}).sort(function(a,b){return a-b;});
+    var hasUntimed=tests.some(function(test){return !(Number(test.duration_ms)>0);});
+    var options=[{value:'all',label:'Any time'}];
+    timeThresholds={};
+    if(durations.length){
+      options.push({value:'timed',label:'Has timing data'});
+      timeThresholds.fastest25=durationAtPercentile(durations,.25);
+      timeThresholds.median=durationAtPercentile(durations,.5);
+      timeThresholds.slowest25=durationAtPercentile(durations,.75);
+      timeThresholds.slowest10=durationAtPercentile(durations,.9);
+      options.push({value:'fastest25',label:'Fastest 25% (≤ '+fmtTestDur(timeThresholds.fastest25)+')'});
+      options.push({value:'median',label:'At least median (≥ '+fmtTestDur(timeThresholds.median)+')'});
+      options.push({value:'slowest25',label:'Slowest 25% (≥ '+fmtTestDur(timeThresholds.slowest25)+')'});
+      options.push({value:'slowest10',label:'Slowest 10% (≥ '+fmtTestDur(timeThresholds.slowest10)+')'});
+    }
+    if(hasUntimed){options.push({value:'untimed',label:'No timing data'});}
+    var selected=savedPrefs.timeFilter||'all';
+    return '<select class="column-filter-time" id="test-time-filter" aria-label="Filter by execution time">'
+      +options.map(function(option){
+        return '<option value="'+option.value+'"'+(option.value===selected?' selected':'')+'>'+esc(option.label)+'</option>';
+      }).join('')+'</select>';
   }
   function checkedValues(className){
     var inputs=testsBox.querySelectorAll('.'+className),values=[];
@@ -806,20 +828,21 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
     var sources=checkedValues('test-filter-source');
     var statuses=checkedValues('test-filter-status');
     var changes=checkedValues('test-filter-change');
-    var minValue=document.getElementById('test-time-min').value;
-    var maxValue=document.getElementById('test-time-max').value;
-    var minTime=minValue===''?null:Number(minValue)*1000;
-    var maxTime=maxValue===''?null:Number(maxValue)*1000;
-    var hasTimeFilter=(minTime!==null&&isFinite(minTime))||(maxTime!==null&&isFinite(maxTime));
+    var timeFilterValue=document.getElementById('test-time-filter').value||'all';
     currentTests=allTests.filter(function(test){
       var duration=Number(test.duration_ms)||0;
+      var matchesTime=timeFilterValue==='all'
+        ||(timeFilterValue==='timed'&&duration>0)
+        ||(timeFilterValue==='untimed'&&duration<=0)
+        ||(timeFilterValue==='fastest25'&&duration>0&&duration<=timeThresholds.fastest25)
+        ||(timeFilterValue==='median'&&duration>=timeThresholds.median)
+        ||(timeFilterValue==='slowest25'&&duration>=timeThresholds.slowest25)
+        ||(timeFilterValue==='slowest10'&&duration>=timeThresholds.slowest10);
       return (!name||(test.title||'').toLowerCase().indexOf(name)!==-1)
         &&sources.indexOf(sourceLabel(test))!==-1
         &&statuses.indexOf(test.status||'unknown')!==-1
         &&changes.indexOf(changeValue(test))!==-1
-        &&(!hasTimeFilter||duration>0)
-        &&(minTime===null||!isFinite(minTime)||duration>=minTime)
-        &&(maxTime===null||!isFinite(maxTime)||duration<=maxTime);
+        &&matchesTime;
     }).sort(function(a,b){return compareTestValues(a,b,sortColumn);});
     if(resetPage!==false){currentPage=0;}
     renderTestPage();
@@ -936,36 +959,30 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
     var sources=Array.from(new Set(tests.map(sourceLabel))).sort(function(a,b){return a.localeCompare(b);});
     var statuses=Array.from(new Set(tests.map(function(test){return test.status||'unknown';}))).sort();
     var changes=Array.from(new Set(tests.map(changeValue))).sort(function(a,b){return ['new','changed','unchanged'].indexOf(a)-['new','changed','unchanged'].indexOf(b);});
-    html+='<div class="test-filters" aria-label="Filter tests">'
-      +'<label class="test-filter-group test-filter-name"><span style="font-size:.72rem;font-weight:700;color:#64748b">Test name</span>'
-      +'<input type="search" id="test-name-filter" value="'+esc(savedPrefs.testName||'')+'" placeholder="Search test names"></label>'
-      +checkboxFilter('test-filter-source',sources)
-      +checkboxFilter('test-filter-status',statuses)
-      +checkboxFilter('test-filter-change',changes)
-      +'<fieldset class="test-filter-group test-filter-time"><legend>Execution time</legend>'
-      +'<div class="test-filter-time-fields"><label>Min (seconds)<input type="number" id="test-time-min" min="0" step="0.1" value="'+esc(savedPrefs.minTime||'')+'" placeholder="Any"></label>'
-      +'<label>Max (seconds)<input type="number" id="test-time-max" min="0" step="0.1" value="'+esc(savedPrefs.maxTime||'')+'" placeholder="Any"></label></div></fieldset>'
-      +'</div>'
-      +'<div class="test-pagination" aria-label="Test table pagination">'
+    html+='<div class="test-pagination" aria-label="Test table pagination">'
       +'<button type="button" id="test-page-prev" aria-label="Previous test page">Prev</button>'
       +'<span id="test-page-range"></span><span id="test-page-count"></span>'
       +'<button type="button" id="test-page-next" aria-label="Next test page">Next</button>'
       +'<label for="test-page-size">Tests per page</label><select id="test-page-size" aria-label="Tests per page">'
       +'<option value="30" selected>30</option><option value="50">50</option><option value="100">100</option></select></div>'
       +'<div class="table-scroll"><table class="all-tests"><thead><tr>'
-      +'<th aria-sort="none"><button type="button" data-sort="title" data-label="Test" aria-label="Sort by Test">Test</button></th>'
-      +'<th aria-sort="none"><button type="button" data-sort="source" data-label="Source" aria-label="Sort by Source">Source</button></th>'
-      +'<th aria-sort="none"><button type="button" data-sort="status" data-label="Status" aria-label="Sort by Status">Status</button></th>'
-      +'<th aria-sort="none"><button type="button" data-sort="duration" data-label="Execution time" aria-label="Sort by Execution time">Execution time</button></th>'
-      +'<th aria-sort="none"><button type="button" data-sort="change" data-label="Change" aria-label="Sort by Change">Change</button></th>'
+      +'<th aria-sort="none"><button type="button" data-sort="title" data-label="Test" aria-label="Sort by Test">Test</button>'
+      +'<input type="search" class="column-filter-name" id="test-name-filter" value="'+esc(savedPrefs.testName||'')+'" placeholder="Search"></th>'
+      +'<th aria-sort="none"><button type="button" data-sort="source" data-label="Source" aria-label="Sort by Source">Source</button>'
+      +checkboxFilter('test-filter-source',sources)+'</th>'
+      +'<th aria-sort="none"><button type="button" data-sort="status" data-label="Status" aria-label="Sort by Status">Status</button>'
+      +checkboxFilter('test-filter-status',statuses)+'</th>'
+      +'<th aria-sort="none"><button type="button" data-sort="duration" data-label="Execution time" aria-label="Sort by Execution time">Execution time</button>'
+      +timeFilter(tests)+'</th>'
+      +'<th aria-sort="none"><button type="button" data-sort="change" data-label="Change" aria-label="Sort by Change">Change</button>'
+      +checkboxFilter('test-filter-change',changes)+'</th>'
       +'</tr></thead><tbody id="all-tests-body"></tbody></table></div>';
     testsBox.innerHTML=html;
     document.getElementById('test-page-size').value=String(testsPerPage);
     var filterInputs=testsBox.querySelectorAll('.test-filter-source, .test-filter-status, .test-filter-change');
     for(var i=0;i<filterInputs.length;i++){filterInputs[i].addEventListener('change',applyTestFilters);}
     document.getElementById('test-name-filter').addEventListener('input',applyTestFilters);
-    document.getElementById('test-time-min').addEventListener('input',applyTestFilters);
-    document.getElementById('test-time-max').addEventListener('input',applyTestFilters);
+    document.getElementById('test-time-filter').addEventListener('change',applyTestFilters);
     var sortButtons=testsBox.querySelectorAll('.all-tests th button');
     for(var i=0;i<sortButtons.length;i++){
       sortButtons[i].addEventListener('click',function(){

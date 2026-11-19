@@ -95,9 +95,11 @@ It creates/updates:
   then flaky tests, then new and changed tests, with test name as the tie-breaker.
   Headline statistics include all configured result sources, and the selected run
   shows available failure details from JSON and XML reports.
-  The test table can be filtered by test-name search, available source, status,
-  change type, and minimum/maximum execution time in seconds. Filters apply
-  before sorting and pagination and refresh when another run is selected.
+  Each test-table column has its filter in the column header: test-name search,
+  available source/status/change checkboxes, and execution-time choices derived
+  from that run's measured durations (fastest/slowest percentiles and whether
+  timing data is available). Filters apply before sorting and pagination and
+  refresh when another run is selected.
   The latest run is selected by default whenever the dashboard loads. Filters,
   pagination, sorting, and trend selection are remembered in a site-scoped
   cookie. A reset control clears saved preferences and restores defaults. The

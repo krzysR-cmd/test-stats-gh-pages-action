@@ -517,7 +517,7 @@ class DetailedStatsTests(unittest.TestCase):
             tests = [{
                 "title": f"test-{index:03d}",
                 "file": "tests/pagination.spec.js",
-                "tests": [{"status": "expected", "results": []}],
+                "tests": [{"status": "expected", "results": [{"duration": (index + 1) * 100}]}],
             } for index in range(65)]
             (results / "playwright.json").write_text(json.dumps({
                 "stats": {"expected": len(tests), "unexpected": 0, "flaky": 0, "skipped": 0, "duration": 0},
@@ -574,7 +574,7 @@ class DetailedStatsTests(unittest.TestCase):
                       return controls[id] || (controls[id] = {
                         innerHTML: '',
                         textContent: '',
-                        value: id === 'run-picker' ? '0' : '',
+                        value: id === 'run-picker' ? '0' : (id === 'test-time-filter' ? 'all' : ''),
                         disabled: false,
                         listeners: {},
                         addEventListener(name, callback) { this.listeners[name] = callback; },
@@ -643,14 +643,15 @@ class DetailedStatsTests(unittest.TestCase):
                     name.value = 'test-064';
                     name.listeners.input();
                     const searched = page();
-                    const minTime = control('test-time-min');
-                    minTime.value = '0.1';
-                    minTime.listeners.input();
-                    const slowOnly = page();
+                    const timeFilter = control('test-time-filter');
+                    timeFilter.value = 'slowest10';
+                    timeFilter.listeners.change();
                     const prefs = JSON.parse(decodeURIComponent(document.cookie.split(';')[0].split('=').slice(1).join('=')));
                     name.value = '';
-                    minTime.value = '';
                     name.listeners.input();
+                    const slowOnly = page();
+                    timeFilter.value = 'all';
+                    timeFilter.listeners.change();
                     const source = filterGroups['test-filter-source'][0];
                     source.checked = false;
                     source.listener();
@@ -671,7 +672,8 @@ class DetailedStatsTests(unittest.TestCase):
                     process.stdout.write(JSON.stringify({
                       first, second, third, previous, resized, sortedDescending, searched, slowOnly,
                       noSource, noStatus, noChange, prefs,
-                      resetCookie: document.cookie, resetReloaded: location.didReload
+                      resetCookie: document.cookie, resetReloaded: location.didReload,
+                      columnHtml: control('selected-run-tests').innerHTML
                     }));
                 """, json.dumps({
                     "script": dashboard[script_start:script_end],
@@ -702,12 +704,23 @@ class DetailedStatsTests(unittest.TestCase):
             self.assertEqual(len(pages["resized"]["titles"]), 50)
             self.assertEqual(pages["sortedDescending"]["titles"][0], "pagination > test-064")
             self.assertEqual(pages["searched"]["titles"], ["pagination > test-064"])
-            self.assertEqual(pages["slowOnly"]["range"], "Showing 0-0 of 0 tests")
+            self.assertEqual(pages["slowOnly"]["range"], "Showing 1-7 of 7 tests")
+            self.assertEqual(pages["slowOnly"]["titles"], [
+                f"pagination > test-{index:03d}" for index in range(64, 57, -1)
+            ])
             self.assertEqual(pages["prefs"]["testsPerPage"], 50)
             self.assertEqual(pages["prefs"]["sortColumn"], "title")
             self.assertEqual(pages["prefs"]["sortDirection"], -1)
             self.assertEqual(pages["prefs"]["testName"], "test-064")
+            self.assertEqual(pages["prefs"]["timeFilter"], "slowest10")
             self.assertNotIn("runIndex", pages["prefs"])
+            durations = sorted(test["duration_ms"] for test in run["tests"])
+            slowest_10_threshold = durations[(len(durations) * 9 + 9) // 10 - 1]
+            self.assertIn(
+                f"Slowest 10% (≥ {slowest_10_threshold / 1000:.2f} s)",
+                pages["columnHtml"],
+            )
+            self.assertIn('id="test-name-filter"', pages["columnHtml"])
             self.assertIn('id="reset-dashboard-preferences"', dashboard)
             self.assertEqual(pages["noSource"]["range"], "Showing 0-0 of 0 tests")
             self.assertEqual(pages["noStatus"]["range"], "Showing 0-0 of 0 tests")
