@@ -65,6 +65,7 @@ class DetailedStatsTests(unittest.TestCase):
             self.assertIn("test-detail-trigger", dashboard)
             self.assertIn("openTestDetail(currentTests[testIndex])", dashboard)
             self.assertIn("function getTestExecutions(test)", dashboard)
+            self.assertIn("var button=headers[i].querySelector('button');\n      if(!button){continue;}", dashboard)
             self.assertIn("Last 20 executions", dashboard)
             self.assertIn("Pass/fail timeline", dashboard)
             self.assertIn("Failure messages", dashboard)
