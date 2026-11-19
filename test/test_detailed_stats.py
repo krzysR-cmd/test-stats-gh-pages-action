@@ -110,8 +110,26 @@ class DetailedStatsTests(unittest.TestCase):
                 (1, 1, 1),
             )
             self.assertEqual(tests["Tests.Pass"]["source"], "VSTest")
+            self.assertEqual(tests["Tests.Pass"]["source_file"], "Ocaramba.Tests.Features.xml")
             self.assertEqual(tests["Tests.Pass"]["duration_ms"], 125)
             self.assertEqual(run["shell_failed_tests"][0]["error"], "broken")
+            self.assertEqual(
+                run["shell_failed_tests"][0]["source_file"],
+                "Ocaramba.Tests.Features.xml",
+            )
+            dashboard = (site / "stats" / "index.html").read_text()
+            self.assertIn("function sourceLabel(test)", dashboard)
+            self.assertIn("sourceLabel(test)", dashboard)
+            self.assertIn("Ocaramba.Tests.Features.xml", dashboard)
+            self.assertIn("Test results (all configured sources)", dashboard)
+            self.assertIn(
+                '<div class="stat-box"><div class="stat-val">2</div>'
+                '<div class="stat-lbl">Avg tests/run</div></div>',
+                dashboard,
+            )
+            self.assertIn('66.7% pass rate', dashboard)
+            self.assertIn("Failure details ('+failures.length+')", dashboard)
+            self.assertIn("failure.error||'No failure message provided.'", dashboard)
 
     def test_reads_nunit_and_xunit_xml_as_supplemental_results(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -163,11 +181,16 @@ class DetailedStatsTests(unittest.TestCase):
                 (3, 2, 3),
             )
             self.assertEqual(tests["NUnit3.Pass"]["source"], "NUnit")
+            self.assertEqual(tests["NUnit3.Pass"]["source_file"], "nunit3.xml")
             self.assertEqual(tests["Xunit.Pass"]["source"], "xUnit")
+            self.assertEqual(tests["Xunit.Pass"]["source_file"], "xunit.xml")
             self.assertEqual(
                 {test["error"] for test in run["shell_failed_tests"]},
                 {"nunit failure", "xunit failure"},
             )
+            dashboard = (site / "stats" / "index.html").read_text()
+            self.assertIn("nunit failure", dashboard)
+            self.assertIn("xunit failure", dashboard)
 
     def test_expands_junit_glob_and_uses_report_name_in_dashboard_title(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -460,9 +483,11 @@ class DetailedStatsTests(unittest.TestCase):
             self.assertIn("failure detail", run["failed_tests"][0]["error"])
             playwright_tests = {test["title"]: test for test in run["tests"] if test["source"] == "Playwright"}
             self.assertEqual(playwright_tests["suite > fails"]["duration_ms"], 300)
+            self.assertEqual(playwright_tests["suite > fails"]["source_file"], "playwright.json")
             self.assertEqual(playwright_tests["suite > retries"]["duration_ms"], 900)
             junit_tests = {test["title"]: test for test in run["tests"] if test["source"] == "JUnit"}
             self.assertEqual(junit_tests["syntax > pass"]["duration_ms"], 125)
+            self.assertEqual(junit_tests["syntax > pass"]["source_file"], "shell.xml")
             self.assertEqual(junit_tests["syntax > fail"]["duration_ms"], 500)
             self.assertEqual(junit_tests["syntax > skip"]["duration_ms"], 0)
             self.assertIn("Test trends (last 30 days)", dashboard)
@@ -479,7 +504,7 @@ class DetailedStatsTests(unittest.TestCase):
             self.assertIn("else if(v==='longest')", dashboard)
             self.assertIn("else if(v==='retried')", dashboard)
             self.assertIn("shell failure", run["shell_failed_tests"][0]["error"])
-            self.assertIn("JSON test results", dashboard)
+            self.assertIn("Test results (all configured sources)", dashboard)
             self.assertNotIn("Additional test results", dashboard)
             self.assertNotIn("JUnit-format test results", dashboard)
             self.assertNotIn("Failed shell tests", dashboard)
@@ -532,6 +557,7 @@ class DetailedStatsTests(unittest.TestCase):
             self.assertIn("currentTests=tests.slice().sort", dashboard)
             self.assertIn("data-sort=\"title\"", dashboard)
             self.assertIn("data-sort=\"source\"", dashboard)
+            self.assertIn("test.source_file||", dashboard)
             self.assertIn("data-sort=\"status\"", dashboard)
             self.assertIn("data-sort=\"duration\"", dashboard)
             self.assertIn("data-sort=\"change\"", dashboard)
@@ -627,7 +653,7 @@ class DetailedStatsTests(unittest.TestCase):
                 dashboard,
             )
             self.assertIn(
-                "run.shell_failed+' failure(s); individual test details were not saved for this run.",
+                "((run.failed||0)+(run.shell_failed||0))+' failure(s); individual test details were not saved for this run.",
                 dashboard,
             )
 

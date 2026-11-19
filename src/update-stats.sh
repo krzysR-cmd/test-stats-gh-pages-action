@@ -44,7 +44,7 @@ run_url         = "{}/{}/actions/runs/{}".format(
 cutoff = datetime.now(timezone.utc) - timedelta(days=30)
 
 
-def walk_suites(suite, parents, failed_tests, flaky_tests, slow_tests, all_tests):
+def walk_suites(suite, parents, failed_tests, flaky_tests, slow_tests, all_tests, source_file):
     suite_title = suite.get("title", "")
     cur = parents + ([suite_title] if suite_title else [])
     for spec in suite.get("specs", []):
@@ -57,6 +57,7 @@ def walk_suites(suite, parents, failed_tests, flaky_tests, slow_tests, all_tests
             duration_ms = sum(result.get("duration", 0) for result in test_results)
             all_tests.append({
                 "source": "Playwright",
+                "source_file": os.path.basename(json_file),
                 "title": full_title,
                 "file": file_path,
                 "duration_ms": duration_ms,
@@ -79,6 +80,7 @@ def walk_suites(suite, parents, failed_tests, flaky_tests, slow_tests, all_tests
                 failed_tests.append({
                     "title": full_title,
                     "file": file_path,
+                    "source_file": source_file,
                     "error": errors[0] if errors else "",
                 })
             elif status == "flaky":
@@ -88,7 +90,7 @@ def walk_suites(suite, parents, failed_tests, flaky_tests, slow_tests, all_tests
                     "attempts": len(test.get("results", [])),
                 })
     for sub in suite.get("suites", []):
-        walk_suites(sub, cur, failed_tests, flaky_tests, slow_tests, all_tests)
+        walk_suites(sub, cur, failed_tests, flaky_tests, slow_tests, all_tests, source_file)
 
 
 all_json_files = sorted(glob.glob(os.path.join(results_dir, "*.json")))
@@ -112,7 +114,10 @@ for json_file in all_json_files:
         agg[k] += raw.get(k, 0)
     agg["duration_ms"] += raw.get("duration", 0)
     for suite in data.get("suites", []):
-        walk_suites(suite, [], failed_tests, flaky_tests, slow_tests, all_tests)
+        walk_suites(
+            suite, [], failed_tests, flaky_tests, slow_tests, all_tests,
+            os.path.basename(json_file),
+        )
 
 # ── Supplemental XML results ─────────────────────────────────────────────────
 
@@ -205,10 +210,12 @@ if shell_xml_files:
                     shell_failed_tests.append({
                         "title": test_title,
                         "file": test_file,
+                        "source_file": os.path.basename(shell_xml_file),
                         "error": strip_ansi(message)[:300],
                     })
                 all_tests.append({
                     "source": source_name,
+                    "source_file": os.path.basename(shell_xml_file),
                     "title": test_title,
                     "file": test_file,
                     "duration_ms": duration_ms,
@@ -238,6 +245,7 @@ if shell_xml_files:
                         shell_failed_tests.append({
                             "title": f"{suite_name} > {tc.get('name', '?')}",
                             "file": tc.get("classname", ""),
+                            "source_file": os.path.basename(shell_xml_file),
                             "error": msg,
                         })
                     else:
@@ -246,6 +254,7 @@ if shell_xml_files:
                     shell_title = f"{suite_name} > {tc.get('name', '?')}"
                     all_tests.append({
                         "source": source_name,
+                        "source_file": os.path.basename(shell_xml_file),
                         "title": shell_title,
                         "file": tc.get("classname", ""),
                         "duration_ms": duration_ms,
@@ -301,10 +310,12 @@ if shell_xml_files:
                     shell_failed_tests.append({
                         "title": test_title,
                         "file": test_file,
+                        "source_file": os.path.basename(shell_xml_file),
                         "error": strip_ansi(message)[:300],
                     })
                 all_tests.append({
                     "source": source_name,
+                    "source_file": os.path.basename(shell_xml_file),
                     "title": test_title,
                     "file": test_file,
                     "duration_ms": duration_ms,
@@ -355,10 +366,12 @@ if shell_xml_files:
                         shell_failed_tests.append({
                             "title": test_title,
                             "file": test_file,
+                            "source_file": os.path.basename(shell_xml_file),
                             "error": strip_ansi(message)[:300],
                         })
                     all_tests.append({
                         "source": source_name,
+                        "source_file": os.path.basename(shell_xml_file),
                         "title": test_title,
                         "file": test_file,
                         "duration_ms": duration_ms,
@@ -461,10 +474,19 @@ print(f"[stats] runs.json updated: {len(store['runs'])} run(s) → {runs_file}")
 # ── Dashboard helpers ───────────────────────────────────────────────────────
 
 def is_all_failed_run(run):
-    total   = run.get("total", 0)
-    skipped = run.get("skipped", 0)
+    total = run.get("total", 0) + run.get("shell_passed", 0) + run.get("shell_failed", 0) + run.get("shell_skipped", 0)
+    skipped = run.get("skipped", 0) + run.get("shell_skipped", 0)
     executed = max(0, total - skipped)
-    return executed > 0 and run.get("failed", 0) >= executed
+    failed = run.get("failed", 0) + run.get("shell_failed", 0)
+    return executed > 0 and failed >= executed
+
+def total_tests(run):
+    return (
+        run.get("total", 0)
+        + run.get("shell_passed", 0)
+        + run.get("shell_failed", 0)
+        + run.get("shell_skipped", 0)
+    )
 
 def top_failing(runs, n=10):
     counts = {}
@@ -519,15 +541,15 @@ eligible  = [r for r in runs if not is_all_failed_run(r)]
 top       = top_failing(runs, 5)
 flaky     = flaky_counts(runs)
 
-total_executed = sum(max(0, r.get("total", 0) - r.get("skipped", 0)) for r in eligible)
-total_passed   = sum(r.get("passed", 0) + r.get("flaky_count", 0) for r in eligible)
-total_failed   = sum(r.get("failed", 0) for r in eligible)
+total_executed = sum(max(0, total_tests(r) - r.get("skipped", 0) - r.get("shell_skipped", 0)) for r in eligible)
+total_passed   = sum(r.get("passed", 0) + r.get("shell_passed", 0) + r.get("flaky_count", 0) for r in eligible)
+total_failed   = sum(r.get("failed", 0) + r.get("shell_failed", 0) for r in eligible)
 total_flaky    = sum(r.get("flaky_count", 0) for r in eligible)
 avg_passed     = int(round(total_passed / max(1, len(eligible))))
 avg_total      = int(round(total_executed / max(1, len(eligible))))
 avg_failed     = round(total_failed / max(1, len(eligible)), 1)
 avg_flaky      = round(total_flaky / max(1, len(eligible)), 1)
-pass_rate      = round(100 * (1 - total_failed / max(1, sum(r.get("total", 0) for r in eligible))), 1)
+pass_rate      = round(100 * (1 - total_failed / max(1, sum(total_tests(r) for r in eligible))), 1)
 
 durations      = [r.get("duration_ms", 0) for r in eligible if r.get("duration_ms", 0) > 0]
 avg_dur_ms     = int(round(sum(durations) / max(1, len(durations)))) if durations else 0
@@ -672,9 +694,9 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
             _status = "✓" if _fail == 0 else "✗"
             _label = (
                 f"{_status} Run #{_run['run_id']} — {_ts}Z"
-                f" — {_run.get('passed', 0)}p / {_run.get('failed', 0)}f"
+                f" — {_run.get('passed', 0) + _run.get('shell_passed', 0)}p / {_fail}f"
                 f" / {_run.get('flaky_count', 0)} flaky"
-                f" / Additional {_run.get('shell_passed', 0)}p {_run.get('shell_failed', 0)}f"
+                f" / {_run.get('skipped', 0) + _run.get('shell_skipped', 0)} skipped"
             )
             _selected = " selected" if _orig_idx == len(runs) - 1 else ""
             fh.write(f'<option value="{_orig_idx}"{_selected}>{esc(_label)}</option>\n')
@@ -703,6 +725,9 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
     var ranks={failed:0,flaky:1,passed:2,skipped:3};
     return Object.prototype.hasOwnProperty.call(ranks,status)?ranks[status]:4;
   }
+  function sourceLabel(test){
+    return test.source_file||(['JUnit','NUnit','xUnit','VSTest'].includes(test.source)?'Additional':test.source||'');
+  }
   function changeRank(test){
     return test.change==='new'?0:(test.change==='changed'?1:2);
   }
@@ -721,8 +746,8 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
       left=a.title||'';
       right=b.title||'';
     }else if(column==='source'){
-      left=['JUnit','NUnit','xUnit','VSTest'].includes(a.source)?'Additional':(a.source||'');
-      right=['JUnit','NUnit','xUnit','VSTest'].includes(b.source)?'Additional':(b.source||'');
+      left=sourceLabel(a);
+      right=sourceLabel(b);
     }else if(column==='status'){
       left=statusRank(a.status||'unknown');
       right=statusRank(b.status||'unknown');
@@ -763,7 +788,7 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
         change='<span class="change-badge change-updated">'+esc(test.previous_status||'unknown')+' &rarr; '+esc(status)+'</span>';
       }
       rows+='<tr data-test-title="'+esc(title)+'" data-test-status="'+esc(status)+'"><td title="'+esc(title)+'">'+esc(clip(shortName(title),90))+'</td>'
-        +'<td>'+esc(['JUnit','NUnit','xUnit','VSTest'].includes(test.source)?'Additional':test.source||'')+'</td><td><span class="status-badge '+statusClass+'">'+esc(status)+'</span></td>'
+        +'<td>'+esc(sourceLabel(test))+'</td><td><span class="status-badge '+statusClass+'">'+esc(status)+'</span></td>'
         +'<td>'+fmtTestDur(test.duration_ms)+'</td><td>'+change+'</td></tr>';
     }
     document.getElementById('all-tests-body').innerHTML=rows;
@@ -855,9 +880,19 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
       +'<span style="font-size:.78rem;color:#64748b">'+esc(ts)+'</span>'
       +'<a href="'+esc(run.run_url)+'" target="_blank" style="font-size:.78rem">View on GitHub ↗</a>'
       +'</div>';
-    var sf=run.shell_failed_tests||[];
-    if(!sf.length && run.shell_failed>0){
-      html+='<p class="comparison-note">'+run.shell_failed+' failure(s); individual test details were not saved for this run.</p>';
+    var failures=(run.failed_tests||[]).concat(run.shell_failed_tests||[]);
+    if(failures.length){
+      html+='<div class="section-lbl">Failure details ('+failures.length+')</div>'
+        +'<div class="table-scroll"><table><tr><th>Source</th><th>Test</th><th>Failure</th></tr>';
+      for(var i=0;i<failures.length;i++){
+        var failure=failures[i],failureTitle=failure.title||'unnamed';
+        html+='<tr><td>'+esc(failure.source_file||failure.source||'Test results')+'</td>'
+          +'<td title="'+esc(failureTitle)+'">'+esc(clip(shortName(failureTitle),70))+'</td>'
+          +'<td>'+esc(failure.error||'No failure message provided.')+'</td></tr>';
+      }
+      html+='</table></div>';
+    }else if((run.failed||0)+(run.shell_failed||0)>0){
+      html+='<p class="comparison-note">'+((run.failed||0)+(run.shell_failed||0))+' failure(s); individual test details were not saved for this run.</p>';
     }
     // Flaky tests
     var flaky=run.flaky_tests||[];
@@ -879,7 +914,7 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
         fh.write(f'<div class="card-header"><h2 class="card-title">Last 30 days &mdash; {len(runs)} run(s)</h2>')
         fh.write(f'<span class="rate-pill {rate_cls}">{pass_rate}% pass rate</span></div>\n')
 
-        fh.write('<div class="section-lbl">JSON test results</div>\n')
+        fh.write('<div class="section-lbl">Test results (all configured sources)</div>\n')
         fh.write('<div class="stats-row">\n')
         fh.write(f'<div class="stat-box"><div class="stat-val">{avg_total}</div><div class="stat-lbl">Avg tests/run</div></div>\n')
         fh.write(f'<div class="stat-box"><div class="stat-val">{avg_passed}</div><div class="stat-lbl">Avg passed/run</div></div>\n')
@@ -894,7 +929,7 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
             fh.write(f'<div class="stat-box"><div class="stat-val">{fmt_dur(max_dur_ms)}</div><div class="stat-lbl">Slowest run</div></div>\n')
             fh.write('</div>\n')
 
-        max_total = max((r.get("total", 0) + r.get("shell_passed", 0) + r.get("shell_failed", 0) for r in runs), default=1) or 1
+        max_total = max((total_tests(r) for r in runs), default=1) or 1
         fh.write('<div class="spark-label">Tests per run (all configured sources) — color shows pass/fail</div>\n')
         fh.write('<div class="sparkline" title="Total tests per run (newest → oldest)">')
         for run in reversed(runs):
@@ -902,7 +937,7 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
             pw_flaky    = run.get("flaky_count", 0)
             sh_failed   = run.get("shell_failed", 0)
             issues      = pw_failed + pw_flaky + sh_failed
-            run_total   = run.get("total", 0) + run.get("shell_passed", 0) + sh_failed
+            run_total   = total_tests(run)
             h           = max(8, round(60 * run_total / max_total))
             if is_all_failed_run(run):
                 color = "#1e293b"
@@ -919,8 +954,9 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
             dur_label = f" — ⏱ {fmt_dur(run.get('duration_ms', 0))}" if run.get("duration_ms", 0) > 0 else ""
             label = (
                 f"Run #{run['run_id']}{dur_label} — "
-                f"JSON: {run.get('passed', 0)} passed / {pw_failed} failed / {pw_flaky} flaky / {run.get('skipped', 0)} skipped — "
-                f"Additional: {run.get('shell_passed', 0)} passed / {sh_failed} failed"
+                f"{run.get('passed', 0) + run.get('shell_passed', 0)} passed / "
+                f"{pw_failed + sh_failed} failed / {pw_flaky} flaky / "
+                f"{run.get('skipped', 0) + run.get('shell_skipped', 0)} skipped"
             )
             fh.write(
                 f'<a href="{esc(run["run_url"])}" target="_blank" title="{esc(label)}">'
