@@ -1102,6 +1102,7 @@ a{{color:#2563eb;text-decoration:none}}a:hover{{text-decoration:underline}}
     var headers=document.querySelectorAll('.all-tests th');
     for(var i=0;i<headers.length;i++){
       var button=headers[i].querySelector('button');
+      if(!button){continue;}
       var column=button.getAttribute('data-sort');
       var label=button.getAttribute('data-label');
       var active=column===sortColumn;
