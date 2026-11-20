@@ -5,7 +5,11 @@
 [Ask DeepWiki](https://deepwiki.com/raczeja/test-stats-gh-pages-action)
 
 <!-- stats-dashboard-screenshots:start -->
-[![Test statistics dashboard](docs/screenshots/stats-dashboard.png)](https://raczeja.github.io/test-stats-gh-pages-action/stats/)
+[![Test statistics dashboard part 1](docs/screenshots/stats-dashboard.png)](https://raczeja.github.io/test-stats-gh-pages-action/stats/)
+[![Test statistics dashboard part 2](docs/screenshots/stats-dashboard-1.png)](https://raczeja.github.io/test-stats-gh-pages-action/stats/)
+[![Test statistics dashboard part 3](docs/screenshots/stats-dashboard-2.png)](https://raczeja.github.io/test-stats-gh-pages-action/stats/)
+[![Test statistics dashboard part 4](docs/screenshots/stats-dashboard-3.png)](https://raczeja.github.io/test-stats-gh-pages-action/stats/)
+[![Test statistics dashboard part 5](docs/screenshots/stats-dashboard-4.png)](https://raczeja.github.io/test-stats-gh-pages-action/stats/)
 <!-- stats-dashboard-screenshots:end -->
 
 Composite GitHub Action for parsing test-result files, writing a GitHub Actions
