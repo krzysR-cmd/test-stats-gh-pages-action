@@ -4,7 +4,9 @@
 
 [Ask DeepWiki](https://deepwiki.com/raczeja/test-stats-gh-pages-action)
 
-[![Test statistics dashboard](screenshots/stats-dashboard.png)](https://raczeja.github.io/test-stats-gh-pages-action/stats/)
+<!-- stats-dashboard-screenshots:start -->
+[![Test statistics dashboard](docs/screenshots/stats-dashboard.png)](https://raczeja.github.io/test-stats-gh-pages-action/stats/)
+<!-- stats-dashboard-screenshots:end -->
 
 Composite GitHub Action for parsing test-result files, writing a GitHub Actions
 step summary, and updating a rolling test-statistics site in a caller-provided

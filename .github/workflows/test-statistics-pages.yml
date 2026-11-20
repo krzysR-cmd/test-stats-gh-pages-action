@@ -10,6 +10,10 @@ permissions:
   contents: read
   pages: read
 
+concurrency:
+  group: gh-pages-${{ github.repository }}
+  cancel-in-progress: false
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -69,10 +73,45 @@ jobs:
       - name: Add Pages landing page
         run: cp src/site-index.html site/index.html
 
+      - name: Install screenshot tools
+        run: |
+          python3 -m pip install Pillow
+          npx --yes playwright@1.55.0 install --with-deps chromium
+
+      - name: Take dashboard screenshots
+        shell: bash
+        run: |
+          mkdir -p screenshots
+          python3 -m http.server 4173 --directory site >/tmp/test-stats-site.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:4173/stats/ >/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          npx --yes playwright@1.55.0 screenshot \
+            --browser=chromium \
+            --viewport-size="1200,900" \
+            --wait-for-timeout=3000 \
+            --full-page \
+            http://127.0.0.1:4173/stats/ \
+            screenshots/stats-dashboard-full.png
+          python3 src/split_screenshot.py \
+            screenshots/stats-dashboard-full.png \
+            docs/screenshots
+          rm screenshots/stats-dashboard-full.png
+
       - uses: actions/upload-artifact@v7
         with:
           name: pages-site
           path: site
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dashboard-screenshots
+          path: docs/screenshots
 
   publish:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
@@ -85,6 +124,29 @@ jobs:
         with:
           name: pages-site
           path: site
+
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: dashboard-screenshots
+          path: docs/screenshots
+
+      - name: Update README screenshots
+        run: python3 src/update_readme_screenshots.py README.md docs/screenshots
+
+      - name: Commit dashboard screenshots
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md docs/screenshots
+          if ! git diff --cached --quiet; then
+            git diff --cached --stat
+            git commit -m "docs: update test statistics screenshots" \
+              -m "Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>"
+            git push origin HEAD:main
+          fi
 
       - name: Publish dashboard
         uses: peaceiris/actions-gh-pages@v4
