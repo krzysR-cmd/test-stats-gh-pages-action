@@ -1,0 +1,4309 @@
+{
+  "runs": [
+    {
+      "run_id": "1",
+      "run_url": "https://github.com/krzysR-cmd/test-stats-gh-pages-action/actions/runs/44476630766",
+      "timestamp": "2026-11-19T07:03:17Z",
+      "total": 0,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "flaky_count": 0,
+      "duration_ms": 0,
+      "slowest_tests": [
+        {
+          "title": "pytest > test_other_trend_selections_show_at_most_five_results",
+          "duration_ms": 429
+        },
+        {
+          "title": "pytest > test_dashboard_shows_average_failures_and_flaky_tests_per_run",
+          "duration_ms": 171
+        },
+        {
+          "title": "pytest > test_lists_all_tests_and_marks_new_or_changed_statuses",
+          "duration_ms": 111
+        },
+        {
+          "title": "pytest > test_paginates_selected_run_tests_and_allows_page_size_selection",
+          "duration_ms": 57
+        },
+        {
+          "title": "pytest > test_longest_tests_trend_includes_timed_junit_results",
+          "duration_ms": 56
+        },
+        {
+          "title": "pytest > test_preserves_rolling_failure_flaky_runtime_and_shell_statistics",
+          "duration_ms": 56
+        },
+        {
+          "title": "pytest > test_reads_nunit_and_xunit_xml_as_supplemental_results",
+          "duration_ms": 56
+        },
+        {
+          "title": "pytest > test_shows_aggregate_counts_for_historical_runs_without_test_details",
+          "duration_ms": 56
+        },
+        {
+          "title": "pytest > test_expands_junit_glob_and_uses_report_name_in_dashboard_title",
+          "duration_ms": 55
+        },
+        {
+          "title": "pytest > test_longest_tests_trend_shows_only_five_slowest_tests",
+          "duration_ms": 55
+        }
+      ],
+      "failed_tests": [],
+      "flaky_tests": [],
+      "tests": [
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_dashboard_shows_average_failures_and_flaky_tests_per_run",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 171,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_expands_junit_glob_and_uses_report_name_in_dashboard_title",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 55,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_fails_when_configured_junit_glob_matches_no_files",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 53,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_lists_all_tests_and_marks_new_or_changed_statuses",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 111,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_longest_tests_trend_includes_timed_junit_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 56,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_longest_tests_trend_shows_only_five_slowest_tests",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 55,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_other_trend_selections_show_at_most_five_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 429,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_paginates_selected_run_tests_and_allows_page_size_selection",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 57,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_preserves_rolling_failure_flaky_runtime_and_shell_statistics",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 56,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_reads_nunit_and_xunit_xml_as_supplemental_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 56,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_reads_vstest_trx_as_supplemental_test_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 55,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_records_shell_failure_when_playwright_results_are_unavailable",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 55,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_shows_aggregate_counts_for_historical_runs_without_test_details",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 56,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_uses_repository_name_for_dashboard_title_by_default",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 54,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_action_aggregates_junit_and_playwright_json",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 3,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_action_updates_history_and_writes_github_outputs",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 3,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_auto_detects_nunit_2_nunit_3_and_xunit_xml",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_auto_detects_vstest_trx_even_when_file_uses_xml_extension",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_dashboard_url_must_be_an_absolute_http_url",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_junit_counts_success_failure_and_skip",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_junit_rejects_non_junit_xml",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_missing_result_fails_explicitly",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_playwright_flaky_is_passed_and_counted_separately",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        }
+      ],
+      "shell_passed": 23,
+      "shell_failed": 0,
+      "shell_skipped": 0,
+      "shell_failed_tests": [],
+      "test_comparison_available": false
+    },
+    {
+      "run_id": "2",
+      "run_url": "https://github.com/krzysR-cmd/test-stats-gh-pages-action/actions/runs/44477770116",
+      "timestamp": "2026-11-19T07:12:16Z",
+      "total": 0,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "flaky_count": 0,
+      "duration_ms": 0,
+      "slowest_tests": [
+        {
+          "title": "pytest > test_other_trend_selections_show_at_most_five_results",
+          "duration_ms": 249
+        },
+        {
+          "title": "pytest > test_dashboard_shows_average_failures_and_flaky_tests_per_run",
+          "duration_ms": 140
+        },
+        {
+          "title": "pytest > test_paginates_selected_run_tests_and_allows_page_size_selection",
+          "duration_ms": 129
+        },
+        {
+          "title": "pytest > test_lists_all_tests_and_marks_new_or_changed_statuses",
+          "duration_ms": 103
+        },
+        {
+          "title": "pytest > test_expands_junit_glob_and_uses_report_name_in_dashboard_title",
+          "duration_ms": 53
+        },
+        {
+          "title": "pytest > test_preserves_rolling_failure_flaky_runtime_and_shell_statistics",
+          "duration_ms": 53
+        },
+        {
+          "title": "pytest > test_longest_tests_trend_shows_only_five_slowest_tests",
+          "duration_ms": 52
+        },
+        {
+          "title": "pytest > test_reads_nunit_and_xunit_xml_as_supplemental_results",
+          "duration_ms": 52
+        },
+        {
+          "title": "pytest > test_reads_vstest_trx_as_supplemental_test_results",
+          "duration_ms": 52
+        },
+        {
+          "title": "pytest > test_records_shell_failure_when_playwright_results_are_unavailable",
+          "duration_ms": 52
+        }
+      ],
+      "failed_tests": [],
+      "flaky_tests": [],
+      "tests": [
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_dashboard_shows_average_failures_and_flaky_tests_per_run",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 140,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_expands_junit_glob_and_uses_report_name_in_dashboard_title",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 53,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_fails_when_configured_junit_glob_matches_no_files",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 51,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_lists_all_tests_and_marks_new_or_changed_statuses",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 103,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_longest_tests_trend_includes_timed_junit_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 51,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_longest_tests_trend_shows_only_five_slowest_tests",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 52,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_other_trend_selections_show_at_most_five_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 249,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_paginates_selected_run_tests_and_allows_page_size_selection",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 129,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_preserves_rolling_failure_flaky_runtime_and_shell_statistics",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 53,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_reads_nunit_and_xunit_xml_as_supplemental_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 52,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_reads_vstest_trx_as_supplemental_test_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 52,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_records_shell_failure_when_playwright_results_are_unavailable",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 52,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_shows_aggregate_counts_for_historical_runs_without_test_details",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 52,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_uses_repository_name_for_dashboard_title_by_default",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 52,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_action_aggregates_junit_and_playwright_json",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 3,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_action_updates_history_and_writes_github_outputs",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 2,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_auto_detects_nunit_2_nunit_3_and_xunit_xml",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_auto_detects_vstest_trx_even_when_file_uses_xml_extension",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_dashboard_url_must_be_an_absolute_http_url",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_junit_counts_success_failure_and_skip",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_junit_rejects_non_junit_xml",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_missing_result_fails_explicitly",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_playwright_flaky_is_passed_and_counted_separately",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        }
+      ],
+      "shell_passed": 23,
+      "shell_failed": 0,
+      "shell_skipped": 0,
+      "shell_failed_tests": [],
+      "test_comparison_available": true,
+      "compared_with_run_id": "1"
+    },
+    {
+      "run_id": "3",
+      "run_url": "https://github.com/krzysR-cmd/test-stats-gh-pages-action/actions/runs/44479629630",
+      "timestamp": "2026-11-19T07:26:51Z",
+      "total": 0,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "flaky_count": 0,
+      "duration_ms": 0,
+      "slowest_tests": [
+        {
+          "title": "pytest > test_other_trend_selections_show_at_most_five_results",
+          "duration_ms": 3038
+        },
+        {
+          "title": "pytest > test_paginates_selected_run_tests_and_allows_page_size_selection",
+          "duration_ms": 525
+        },
+        {
+          "title": "pytest > test_dashboard_shows_average_failures_and_flaky_tests_per_run",
+          "duration_ms": 83
+        },
+        {
+          "title": "pytest > test_lists_all_tests_and_marks_new_or_changed_statuses",
+          "duration_ms": 70
+        },
+        {
+          "title": "pytest > test_preserves_rolling_failure_flaky_runtime_and_shell_statistics",
+          "duration_ms": 39
+        },
+        {
+          "title": "pytest > test_expands_junit_glob_and_uses_report_name_in_dashboard_title",
+          "duration_ms": 38
+        },
+        {
+          "title": "pytest > test_reads_nunit_and_xunit_xml_as_supplemental_results",
+          "duration_ms": 37
+        },
+        {
+          "title": "pytest > test_reads_vstest_trx_as_supplemental_test_results",
+          "duration_ms": 37
+        },
+        {
+          "title": "pytest > test_records_shell_failure_when_playwright_results_are_unavailable",
+          "duration_ms": 36
+        },
+        {
+          "title": "pytest > test_longest_tests_trend_includes_timed_junit_results",
+          "duration_ms": 35
+        }
+      ],
+      "failed_tests": [],
+      "flaky_tests": [],
+      "tests": [
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_dashboard_shows_average_failures_and_flaky_tests_per_run",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 83,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_expands_junit_glob_and_uses_report_name_in_dashboard_title",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 38,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_fails_when_configured_junit_glob_matches_no_files",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 34,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_lists_all_tests_and_marks_new_or_changed_statuses",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 70,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_longest_tests_trend_includes_timed_junit_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 35,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_longest_tests_trend_shows_only_five_slowest_tests",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 35,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_other_trend_selections_show_at_most_five_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 3038,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_paginates_selected_run_tests_and_allows_page_size_selection",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 525,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_preserves_rolling_failure_flaky_runtime_and_shell_statistics",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 39,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_reads_nunit_and_xunit_xml_as_supplemental_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 37,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_reads_vstest_trx_as_supplemental_test_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 37,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_records_shell_failure_when_playwright_results_are_unavailable",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 36,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_shows_aggregate_counts_for_historical_runs_without_test_details",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 35,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_uses_repository_name_for_dashboard_title_by_default",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 35,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_action_aggregates_junit_and_playwright_json",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 2,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_action_updates_history_and_writes_github_outputs",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_auto_detects_nunit_2_nunit_3_and_xunit_xml",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_auto_detects_vstest_trx_even_when_file_uses_xml_extension",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 0,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_dashboard_url_must_be_an_absolute_http_url",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_junit_counts_success_failure_and_skip",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 0,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_junit_rejects_non_junit_xml",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 0,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_missing_result_fails_explicitly",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 0,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_playwright_flaky_is_passed_and_counted_separately",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 0,
+          "status": "passed"
+        }
+      ],
+      "shell_passed": 23,
+      "shell_failed": 0,
+      "shell_skipped": 0,
+      "shell_failed_tests": [],
+      "test_comparison_available": true,
+      "compared_with_run_id": "2"
+    },
+    {
+      "run_id": "4",
+      "run_url": "https://github.com/krzysR-cmd/test-stats-gh-pages-action/actions/runs/44481671654",
+      "timestamp": "2026-11-19T07:42:36Z",
+      "total": 0,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "flaky_count": 0,
+      "duration_ms": 0,
+      "slowest_tests": [
+        {
+          "title": "pytest > test_other_trend_selections_show_at_most_five_results",
+          "duration_ms": 2162
+        },
+        {
+          "title": "pytest > test_paginates_selected_run_tests_and_allows_page_size_selection",
+          "duration_ms": 461
+        },
+        {
+          "title": "pytest > test_dashboard_shows_average_failures_and_flaky_tests_per_run",
+          "duration_ms": 146
+        },
+        {
+          "title": "pytest > test_lists_all_tests_and_marks_new_or_changed_statuses",
+          "duration_ms": 103
+        },
+        {
+          "title": "pytest > test_expands_junit_glob_and_uses_report_name_in_dashboard_title",
+          "duration_ms": 53
+        },
+        {
+          "title": "pytest > test_longest_tests_trend_includes_timed_junit_results",
+          "duration_ms": 53
+        },
+        {
+          "title": "pytest > test_preserves_rolling_failure_flaky_runtime_and_shell_statistics",
+          "duration_ms": 53
+        },
+        {
+          "title": "pytest > test_reads_nunit_and_xunit_xml_as_supplemental_results",
+          "duration_ms": 53
+        },
+        {
+          "title": "pytest > test_longest_tests_trend_shows_only_five_slowest_tests",
+          "duration_ms": 52
+        },
+        {
+          "title": "pytest > test_records_shell_failure_when_playwright_results_are_unavailable",
+          "duration_ms": 52
+        }
+      ],
+      "failed_tests": [],
+      "flaky_tests": [],
+      "tests": [
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_dashboard_shows_average_failures_and_flaky_tests_per_run",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 146,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_expands_junit_glob_and_uses_report_name_in_dashboard_title",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 53,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_fails_when_configured_junit_glob_matches_no_files",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 50,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_lists_all_tests_and_marks_new_or_changed_statuses",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 103,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_longest_tests_trend_includes_timed_junit_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 53,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_longest_tests_trend_shows_only_five_slowest_tests",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 52,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_other_trend_selections_show_at_most_five_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 2162,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_paginates_selected_run_tests_and_allows_page_size_selection",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 461,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_preserves_rolling_failure_flaky_runtime_and_shell_statistics",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 53,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_reads_nunit_and_xunit_xml_as_supplemental_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 53,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_reads_vstest_trx_as_supplemental_test_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 51,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_records_shell_failure_when_playwright_results_are_unavailable",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 52,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_shows_aggregate_counts_for_historical_runs_without_test_details",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 51,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_uses_repository_name_for_dashboard_title_by_default",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 51,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_action_aggregates_junit_and_playwright_json",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 3,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_action_updates_history_and_writes_github_outputs",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 2,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_auto_detects_nunit_2_nunit_3_and_xunit_xml",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_auto_detects_vstest_trx_even_when_file_uses_xml_extension",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_dashboard_url_is_discovered_from_github_pages_config",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 2,
+          "status": "passed",
+          "change": "new"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_dashboard_url_must_be_an_absolute_http_url",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_junit_counts_success_failure_and_skip",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_junit_rejects_non_junit_xml",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_missing_github_pages_config_omits_dashboard_link",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed",
+          "change": "new"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_missing_result_fails_explicitly",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_playwright_flaky_is_passed_and_counted_separately",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        }
+      ],
+      "shell_passed": 25,
+      "shell_failed": 0,
+      "shell_skipped": 0,
+      "shell_failed_tests": [],
+      "test_comparison_available": true,
+      "compared_with_run_id": "3"
+    },
+    {
+      "run_id": "5",
+      "run_url": "https://github.com/krzysR-cmd/test-stats-gh-pages-action/actions/runs/44487927929",
+      "timestamp": "2026-11-19T08:28:58Z",
+      "total": 0,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "flaky_count": 0,
+      "duration_ms": 0,
+      "slowest_tests": [
+        {
+          "title": "pytest > test_other_trend_selections_show_at_most_five_results",
+          "duration_ms": 2259
+        },
+        {
+          "title": "pytest > test_paginates_selected_run_tests_and_allows_page_size_selection",
+          "duration_ms": 416
+        },
+        {
+          "title": "pytest > test_dashboard_shows_average_failures_and_flaky_tests_per_run",
+          "duration_ms": 177
+        },
+        {
+          "title": "pytest > test_lists_all_tests_and_marks_new_or_changed_statuses",
+          "duration_ms": 119
+        },
+        {
+          "title": "pytest > test_records_shell_failure_when_playwright_results_are_unavailable",
+          "duration_ms": 60
+        },
+        {
+          "title": "pytest > test_expands_junit_glob_and_uses_report_name_in_dashboard_title",
+          "duration_ms": 59
+        },
+        {
+          "title": "pytest > test_longest_tests_trend_includes_timed_junit_results",
+          "duration_ms": 59
+        },
+        {
+          "title": "pytest > test_preserves_rolling_failure_flaky_runtime_and_shell_statistics",
+          "duration_ms": 59
+        },
+        {
+          "title": "pytest > test_reads_nunit_and_xunit_xml_as_supplemental_results",
+          "duration_ms": 59
+        },
+        {
+          "title": "pytest > test_shows_aggregate_counts_for_historical_runs_without_test_details",
+          "duration_ms": 59
+        }
+      ],
+      "failed_tests": [],
+      "flaky_tests": [],
+      "tests": [
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_dashboard_shows_average_failures_and_flaky_tests_per_run",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 177,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_expands_junit_glob_and_uses_report_name_in_dashboard_title",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 59,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_fails_when_configured_junit_glob_matches_no_files",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 58,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_lists_all_tests_and_marks_new_or_changed_statuses",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 119,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_longest_tests_trend_includes_timed_junit_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 59,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_longest_tests_trend_shows_only_five_slowest_tests",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 57,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_other_trend_selections_show_at_most_five_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 2259,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_paginates_selected_run_tests_and_allows_page_size_selection",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 416,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_preserves_rolling_failure_flaky_runtime_and_shell_statistics",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 59,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_reads_nunit_and_xunit_xml_as_supplemental_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 59,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_reads_vstest_trx_as_supplemental_test_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 58,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_records_shell_failure_when_playwright_results_are_unavailable",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 60,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_shows_aggregate_counts_for_historical_runs_without_test_details",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 59,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_uses_repository_name_for_dashboard_title_by_default",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 58,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_action_aggregates_junit_and_playwright_json",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 3,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_action_updates_history_and_writes_github_outputs",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 2,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_auto_detects_nunit_2_nunit_3_and_xunit_xml",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_auto_detects_vstest_trx_even_when_file_uses_xml_extension",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_dashboard_url_is_discovered_from_github_pages_config",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 2,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_dashboard_url_must_be_an_absolute_http_url",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_junit_counts_success_failure_and_skip",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_junit_rejects_non_junit_xml",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_missing_github_pages_config_omits_dashboard_link",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_missing_result_fails_explicitly",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_playwright_flaky_is_passed_and_counted_separately",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        }
+      ],
+      "shell_passed": 25,
+      "shell_failed": 0,
+      "shell_skipped": 0,
+      "shell_failed_tests": [],
+      "test_comparison_available": true,
+      "compared_with_run_id": "4"
+    },
+    {
+      "run_id": "6",
+      "run_url": "https://github.com/krzysR-cmd/test-stats-gh-pages-action/actions/runs/44494729980",
+      "timestamp": "2026-11-19T09:15:47Z",
+      "total": 0,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "flaky_count": 0,
+      "duration_ms": 0,
+      "slowest_tests": [
+        {
+          "title": "pytest > test_other_trend_selections_show_at_most_five_results",
+          "duration_ms": 4778
+        },
+        {
+          "title": "pytest > test_paginates_selected_run_tests_and_allows_page_size_selection",
+          "duration_ms": 1125
+        },
+        {
+          "title": "pytest > test_dashboard_shows_average_failures_and_flaky_tests_per_run",
+          "duration_ms": 333
+        },
+        {
+          "title": "pytest > test_lists_all_tests_and_marks_new_or_changed_statuses",
+          "duration_ms": 110
+        },
+        {
+          "title": "pytest > test_expands_junit_glob_and_uses_report_name_in_dashboard_title",
+          "duration_ms": 56
+        },
+        {
+          "title": "pytest > test_preserves_rolling_failure_flaky_runtime_and_shell_statistics",
+          "duration_ms": 55
+        },
+        {
+          "title": "pytest > test_reads_vstest_trx_as_supplemental_test_results",
+          "duration_ms": 55
+        },
+        {
+          "title": "pytest > test_records_shell_failure_when_playwright_results_are_unavailable",
+          "duration_ms": 55
+        },
+        {
+          "title": "pytest > test_longest_tests_trend_includes_timed_junit_results",
+          "duration_ms": 54
+        },
+        {
+          "title": "pytest > test_longest_tests_trend_shows_only_five_slowest_tests",
+          "duration_ms": 54
+        }
+      ],
+      "failed_tests": [],
+      "flaky_tests": [],
+      "tests": [
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_dashboard_shows_average_failures_and_flaky_tests_per_run",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 333,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_expands_junit_glob_and_uses_report_name_in_dashboard_title",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 56,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_fails_when_configured_junit_glob_matches_no_files",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 53,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_lists_all_tests_and_marks_new_or_changed_statuses",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 110,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_longest_tests_trend_includes_timed_junit_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 54,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_longest_tests_trend_shows_only_five_slowest_tests",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 54,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_other_trend_selections_show_at_most_five_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 4778,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_paginates_selected_run_tests_and_allows_page_size_selection",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 1125,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_preserves_rolling_failure_flaky_runtime_and_shell_statistics",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 55,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_reads_nunit_and_xunit_xml_as_supplemental_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 54,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_reads_vstest_trx_as_supplemental_test_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 55,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_records_shell_failure_when_playwright_results_are_unavailable",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 55,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_shows_aggregate_counts_for_historical_runs_without_test_details",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 54,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_uses_repository_name_for_dashboard_title_by_default",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 54,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_action_aggregates_junit_and_playwright_json",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 3,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_action_updates_history_and_writes_github_outputs",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 2,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_auto_detects_nunit_2_nunit_3_and_xunit_xml",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_auto_detects_vstest_trx_even_when_file_uses_xml_extension",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_dashboard_url_is_discovered_from_github_pages_config",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 2,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_dashboard_url_must_be_an_absolute_http_url",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_junit_counts_success_failure_and_skip",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_junit_rejects_non_junit_xml",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_missing_github_pages_config_omits_dashboard_link",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_missing_result_fails_explicitly",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_playwright_flaky_is_passed_and_counted_separately",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        }
+      ],
+      "shell_passed": 25,
+      "shell_failed": 0,
+      "shell_skipped": 0,
+      "shell_failed_tests": [],
+      "test_comparison_available": true,
+      "compared_with_run_id": "5"
+    },
+    {
+      "run_id": "7",
+      "run_url": "https://github.com/krzysR-cmd/test-stats-gh-pages-action/actions/runs/44497652507",
+      "timestamp": "2026-11-19T09:34:41Z",
+      "total": 0,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "flaky_count": 0,
+      "duration_ms": 0,
+      "slowest_tests": [
+        {
+          "title": "pytest > test_other_trend_selections_show_at_most_five_results",
+          "duration_ms": 236
+        },
+        {
+          "title": "pytest > test_dashboard_shows_average_failures_and_flaky_tests_per_run",
+          "duration_ms": 149
+        },
+        {
+          "title": "pytest > test_paginates_selected_run_tests_and_allows_page_size_selection",
+          "duration_ms": 126
+        },
+        {
+          "title": "pytest > test_lists_all_tests_and_marks_new_or_changed_statuses",
+          "duration_ms": 114
+        },
+        {
+          "title": "pytest > test_longest_tests_trend_includes_timed_junit_results",
+          "duration_ms": 57
+        },
+        {
+          "title": "pytest > test_longest_tests_trend_shows_only_five_slowest_tests",
+          "duration_ms": 56
+        },
+        {
+          "title": "pytest > test_expands_junit_glob_and_uses_report_name_in_dashboard_title",
+          "duration_ms": 55
+        },
+        {
+          "title": "pytest > test_reads_nunit_and_xunit_xml_as_supplemental_results",
+          "duration_ms": 54
+        },
+        {
+          "title": "pytest > test_shows_aggregate_counts_for_historical_runs_without_test_details",
+          "duration_ms": 54
+        },
+        {
+          "title": "pytest > test_preserves_rolling_failure_flaky_runtime_and_shell_statistics",
+          "duration_ms": 53
+        }
+      ],
+      "failed_tests": [],
+      "flaky_tests": [],
+      "tests": [
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_dashboard_shows_average_failures_and_flaky_tests_per_run",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 149,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_expands_junit_glob_and_uses_report_name_in_dashboard_title",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 55,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_fails_when_configured_junit_glob_matches_no_files",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 52,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_lists_all_tests_and_marks_new_or_changed_statuses",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 114,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_longest_tests_trend_includes_timed_junit_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 57,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_longest_tests_trend_shows_only_five_slowest_tests",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 56,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_other_trend_selections_show_at_most_five_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 236,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_paginates_selected_run_tests_and_allows_page_size_selection",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 126,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_preserves_rolling_failure_flaky_runtime_and_shell_statistics",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 53,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_reads_nunit_and_xunit_xml_as_supplemental_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 54,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_reads_vstest_trx_as_supplemental_test_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 53,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_records_shell_failure_when_playwright_results_are_unavailable",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 53,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_shows_aggregate_counts_for_historical_runs_without_test_details",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 54,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_uses_repository_name_for_dashboard_title_by_default",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 53,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_action_aggregates_junit_and_playwright_json",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 3,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_action_updates_history_and_writes_github_outputs",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 2,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_auto_detects_nunit_2_nunit_3_and_xunit_xml",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_auto_detects_vstest_trx_even_when_file_uses_xml_extension",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_dashboard_url_is_discovered_from_github_pages_config",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 2,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_dashboard_url_must_be_an_absolute_http_url",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_junit_counts_success_failure_and_skip",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_junit_rejects_non_junit_xml",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_missing_github_pages_config_omits_dashboard_link",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_missing_result_fails_explicitly",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_playwright_flaky_is_passed_and_counted_separately",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        }
+      ],
+      "shell_passed": 25,
+      "shell_failed": 0,
+      "shell_skipped": 0,
+      "shell_failed_tests": [],
+      "test_comparison_available": true,
+      "compared_with_run_id": "6"
+    },
+    {
+      "run_id": "8",
+      "run_url": "https://github.com/krzysR-cmd/test-stats-gh-pages-action/actions/runs/44552791148",
+      "timestamp": "2026-11-19T15:16:02Z",
+      "total": 0,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "flaky_count": 0,
+      "duration_ms": 0,
+      "slowest_tests": [
+        {
+          "title": "pytest > test_other_trend_selections_show_at_most_five_results",
+          "duration_ms": 1906
+        },
+        {
+          "title": "pytest > test_paginates_selected_run_tests_and_allows_page_size_selection",
+          "duration_ms": 343
+        },
+        {
+          "title": "pytest > test_dashboard_shows_average_failures_and_flaky_tests_per_run",
+          "duration_ms": 140
+        },
+        {
+          "title": "pytest > test_lists_all_tests_and_marks_new_or_changed_statuses",
+          "duration_ms": 104
+        },
+        {
+          "title": "pytest > test_expands_junit_glob_and_uses_report_name_in_dashboard_title",
+          "duration_ms": 54
+        },
+        {
+          "title": "pytest > test_reads_nunit_and_xunit_xml_as_supplemental_results",
+          "duration_ms": 54
+        },
+        {
+          "title": "pytest > test_reads_vstest_trx_as_supplemental_test_results",
+          "duration_ms": 54
+        },
+        {
+          "title": "pytest > test_longest_tests_trend_includes_timed_junit_results",
+          "duration_ms": 53
+        },
+        {
+          "title": "pytest > test_longest_tests_trend_shows_only_five_slowest_tests",
+          "duration_ms": 53
+        },
+        {
+          "title": "pytest > test_preserves_rolling_failure_flaky_runtime_and_shell_statistics",
+          "duration_ms": 53
+        }
+      ],
+      "failed_tests": [],
+      "flaky_tests": [],
+      "tests": [
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_dashboard_shows_average_failures_and_flaky_tests_per_run",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 140,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_expands_junit_glob_and_uses_report_name_in_dashboard_title",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 54,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_fails_when_configured_junit_glob_matches_no_files",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 51,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_lists_all_tests_and_marks_new_or_changed_statuses",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 104,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_longest_tests_trend_includes_timed_junit_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 53,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_longest_tests_trend_shows_only_five_slowest_tests",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 53,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_other_trend_selections_show_at_most_five_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 1906,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_paginates_selected_run_tests_and_allows_page_size_selection",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 343,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_preserves_rolling_failure_flaky_runtime_and_shell_statistics",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 53,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_reads_nunit_and_xunit_xml_as_supplemental_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 54,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_reads_vstest_trx_as_supplemental_test_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 54,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_records_shell_failure_when_playwright_results_are_unavailable",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 53,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_shows_aggregate_counts_for_historical_runs_without_test_details",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 52,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_uses_repository_name_for_dashboard_title_by_default",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 52,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_action_aggregates_junit_and_playwright_json",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 3,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_action_updates_history_and_writes_github_outputs",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 2,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_auto_detects_nunit_2_nunit_3_and_xunit_xml",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_auto_detects_vstest_trx_even_when_file_uses_xml_extension",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_dashboard_url_is_discovered_from_github_pages_config",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 2,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_dashboard_url_must_be_an_absolute_http_url",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_junit_counts_success_failure_and_skip",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_junit_rejects_non_junit_xml",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_missing_github_pages_config_omits_dashboard_link",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_missing_result_fails_explicitly",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_playwright_flaky_is_passed_and_counted_separately",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        }
+      ],
+      "shell_passed": 25,
+      "shell_failed": 0,
+      "shell_skipped": 0,
+      "shell_failed_tests": [],
+      "test_comparison_available": true,
+      "compared_with_run_id": "7"
+    },
+    {
+      "run_id": "9",
+      "run_url": "https://github.com/krzysR-cmd/test-stats-gh-pages-action/actions/runs/44604572016",
+      "timestamp": "2026-11-19T20:03:00Z",
+      "total": 0,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "flaky_count": 0,
+      "duration_ms": 0,
+      "slowest_tests": [
+        {
+          "title": "pytest > test_other_trend_selections_show_at_most_five_results",
+          "duration_ms": 218
+        },
+        {
+          "title": "pytest > test_dashboard_shows_average_failures_and_flaky_tests_per_run",
+          "duration_ms": 161
+        },
+        {
+          "title": "pytest > test_paginates_selected_run_tests_and_allows_page_size_selection",
+          "duration_ms": 103
+        },
+        {
+          "title": "pytest > test_lists_all_tests_and_marks_new_or_changed_statuses",
+          "duration_ms": 90
+        },
+        {
+          "title": "pytest > test_expands_junit_glob_and_uses_report_name_in_dashboard_title",
+          "duration_ms": 48
+        },
+        {
+          "title": "pytest > test_fails_when_configured_junit_glob_matches_no_files",
+          "duration_ms": 45
+        },
+        {
+          "title": "pytest > test_uses_repository_name_for_dashboard_title_by_default",
+          "duration_ms": 43
+        },
+        {
+          "title": "pytest > test_longest_tests_trend_includes_timed_junit_results",
+          "duration_ms": 42
+        },
+        {
+          "title": "pytest > test_reads_nunit_and_xunit_xml_as_supplemental_results",
+          "duration_ms": 42
+        },
+        {
+          "title": "pytest > test_reads_vstest_trx_as_supplemental_test_results",
+          "duration_ms": 41
+        }
+      ],
+      "failed_tests": [],
+      "flaky_tests": [],
+      "tests": [
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_dashboard_shows_average_failures_and_flaky_tests_per_run",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 161,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_expands_junit_glob_and_uses_report_name_in_dashboard_title",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 48,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_fails_when_configured_junit_glob_matches_no_files",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 45,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_lists_all_tests_and_marks_new_or_changed_statuses",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 90,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_longest_tests_trend_includes_timed_junit_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 42,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_longest_tests_trend_shows_only_five_slowest_tests",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 40,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_other_trend_selections_show_at_most_five_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 218,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_paginates_selected_run_tests_and_allows_page_size_selection",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 103,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_preserves_rolling_failure_flaky_runtime_and_shell_statistics",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 40,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_reads_nunit_and_xunit_xml_as_supplemental_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 42,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_reads_vstest_trx_as_supplemental_test_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 41,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_records_shell_failure_when_playwright_results_are_unavailable",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 39,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_shows_aggregate_counts_for_historical_runs_without_test_details",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 41,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_uses_repository_name_for_dashboard_title_by_default",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 43,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_action_aggregates_junit_and_playwright_json",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 3,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_action_updates_history_and_writes_github_outputs",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 2,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_auto_detects_nunit_2_nunit_3_and_xunit_xml",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_auto_detects_vstest_trx_even_when_file_uses_xml_extension",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_dashboard_url_is_discovered_from_github_pages_config",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 2,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_dashboard_url_must_be_an_absolute_http_url",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_junit_counts_success_failure_and_skip",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 0,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_junit_rejects_non_junit_xml",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 0,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_missing_github_pages_config_omits_dashboard_link",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_missing_result_fails_explicitly",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 0,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_playwright_flaky_is_passed_and_counted_separately",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 0,
+          "status": "passed"
+        }
+      ],
+      "shell_passed": 25,
+      "shell_failed": 0,
+      "shell_skipped": 0,
+      "shell_failed_tests": [],
+      "test_comparison_available": true,
+      "compared_with_run_id": "8"
+    },
+    {
+      "run_id": "10",
+      "run_url": "https://github.com/krzysR-cmd/test-stats-gh-pages-action/actions/runs/44605901289",
+      "timestamp": "2026-11-19T20:10:35Z",
+      "total": 0,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "flaky_count": 0,
+      "duration_ms": 0,
+      "slowest_tests": [
+        {
+          "title": "pytest > test_other_trend_selections_show_at_most_five_results",
+          "duration_ms": 198
+        },
+        {
+          "title": "pytest > test_dashboard_shows_average_failures_and_flaky_tests_per_run",
+          "duration_ms": 134
+        },
+        {
+          "title": "pytest > test_paginates_selected_run_tests_and_allows_page_size_selection",
+          "duration_ms": 112
+        },
+        {
+          "title": "pytest > test_lists_all_tests_and_marks_new_or_changed_statuses",
+          "duration_ms": 99
+        },
+        {
+          "title": "pytest > test_expands_junit_glob_and_uses_report_name_in_dashboard_title",
+          "duration_ms": 55
+        },
+        {
+          "title": "pytest > test_longest_tests_trend_includes_timed_junit_results",
+          "duration_ms": 50
+        },
+        {
+          "title": "pytest > test_longest_tests_trend_shows_only_five_slowest_tests",
+          "duration_ms": 50
+        },
+        {
+          "title": "pytest > test_preserves_rolling_failure_flaky_runtime_and_shell_statistics",
+          "duration_ms": 50
+        },
+        {
+          "title": "pytest > test_run_picker_pages_through_runs_in_batches_of_20",
+          "duration_ms": 50
+        },
+        {
+          "title": "pytest > test_shows_aggregate_counts_for_historical_runs_without_test_details",
+          "duration_ms": 50
+        }
+      ],
+      "failed_tests": [],
+      "flaky_tests": [],
+      "tests": [
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_dashboard_shows_average_failures_and_flaky_tests_per_run",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 134,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_expands_junit_glob_and_uses_report_name_in_dashboard_title",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 55,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_fails_when_configured_junit_glob_matches_no_files",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 48,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_lists_all_tests_and_marks_new_or_changed_statuses",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 99,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_longest_tests_trend_includes_timed_junit_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 50,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_longest_tests_trend_shows_only_five_slowest_tests",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 50,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_other_trend_selections_show_at_most_five_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 198,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_paginates_selected_run_tests_and_allows_page_size_selection",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 112,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_preserves_rolling_failure_flaky_runtime_and_shell_statistics",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 50,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_reads_nunit_and_xunit_xml_as_supplemental_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 49,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_reads_vstest_trx_as_supplemental_test_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 49,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_records_shell_failure_when_playwright_results_are_unavailable",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 49,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_run_picker_pages_through_runs_in_batches_of_20",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 50,
+          "status": "passed",
+          "change": "new"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_shows_aggregate_counts_for_historical_runs_without_test_details",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 50,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_uses_repository_name_for_dashboard_title_by_default",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 49,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_action_aggregates_junit_and_playwright_json",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 3,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_action_updates_history_and_writes_github_outputs",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 2,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_auto_detects_nunit_2_nunit_3_and_xunit_xml",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_auto_detects_vstest_trx_even_when_file_uses_xml_extension",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_dashboard_url_is_discovered_from_github_pages_config",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 2,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_dashboard_url_must_be_an_absolute_http_url",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_junit_counts_success_failure_and_skip",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 0,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_junit_rejects_non_junit_xml",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 0,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_missing_github_pages_config_omits_dashboard_link",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_missing_result_fails_explicitly",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_playwright_flaky_is_passed_and_counted_separately",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        }
+      ],
+      "shell_passed": 26,
+      "shell_failed": 0,
+      "shell_skipped": 0,
+      "shell_failed_tests": [],
+      "test_comparison_available": true,
+      "compared_with_run_id": "9"
+    },
+    {
+      "run_id": "11",
+      "run_url": "https://github.com/krzysR-cmd/test-stats-gh-pages-action/actions/runs/44608068904",
+      "timestamp": "2026-11-19T20:23:11Z",
+      "total": 0,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "flaky_count": 0,
+      "passed_after_retry_count": 0,
+      "retry_count": 0,
+      "duration_ms": 0,
+      "slowest_tests": [
+        {
+          "title": "pytest > test_other_trend_selections_show_at_most_five_results",
+          "duration_ms": 3683
+        },
+        {
+          "title": "pytest > test_paginates_selected_run_tests_and_allows_page_size_selection",
+          "duration_ms": 515
+        },
+        {
+          "title": "pytest > test_dashboard_shows_average_failures_and_flaky_tests_per_run",
+          "duration_ms": 124
+        },
+        {
+          "title": "pytest > test_lists_all_tests_and_marks_new_or_changed_statuses",
+          "duration_ms": 77
+        },
+        {
+          "title": "pytest > test_preserves_rolling_failure_flaky_runtime_and_shell_statistics",
+          "duration_ms": 41
+        },
+        {
+          "title": "pytest > test_records_shell_failure_when_playwright_results_are_unavailable",
+          "duration_ms": 41
+        },
+        {
+          "title": "pytest > test_expands_junit_glob_and_uses_report_name_in_dashboard_title",
+          "duration_ms": 40
+        },
+        {
+          "title": "pytest > test_run_picker_pages_through_runs_in_batches_of_20",
+          "duration_ms": 40
+        },
+        {
+          "title": "pytest > test_longest_tests_trend_includes_timed_junit_results",
+          "duration_ms": 39
+        },
+        {
+          "title": "pytest > test_longest_tests_trend_shows_only_five_slowest_tests",
+          "duration_ms": 39
+        }
+      ],
+      "failed_tests": [],
+      "flaky_tests": [],
+      "tests": [
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_dashboard_shows_average_failures_and_flaky_tests_per_run",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 124,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_expands_junit_glob_and_uses_report_name_in_dashboard_title",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 40,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_fails_when_configured_junit_glob_matches_no_files",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 38,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_lists_all_tests_and_marks_new_or_changed_statuses",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 77,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_longest_tests_trend_includes_timed_junit_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 39,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_longest_tests_trend_shows_only_five_slowest_tests",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 39,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_other_trend_selections_show_at_most_five_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 3683,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_paginates_selected_run_tests_and_allows_page_size_selection",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 515,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_preserves_rolling_failure_flaky_runtime_and_shell_statistics",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 41,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_reads_nunit_and_xunit_xml_as_supplemental_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 39,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_reads_vstest_trx_as_supplemental_test_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 39,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_records_shell_failure_when_playwright_results_are_unavailable",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 41,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_run_picker_pages_through_runs_in_batches_of_20",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 40,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_shows_aggregate_counts_for_historical_runs_without_test_details",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 39,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_uses_repository_name_for_dashboard_title_by_default",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 38,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_action_aggregates_junit_and_playwright_json",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 2,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_action_updates_history_and_writes_github_outputs",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_auto_detects_nunit_2_nunit_3_and_xunit_xml",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_auto_detects_vstest_trx_even_when_file_uses_xml_extension",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 0,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_dashboard_url_is_discovered_from_github_pages_config",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_dashboard_url_must_be_an_absolute_http_url",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_junit_counts_success_failure_and_skip",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 0,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_junit_rejects_non_junit_xml",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 0,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_missing_github_pages_config_omits_dashboard_link",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_missing_result_fails_explicitly",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 0,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_playwright_flaky_is_passed_and_counted_separately",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 0,
+          "status": "passed"
+        }
+      ],
+      "shell_passed": 26,
+      "shell_failed": 0,
+      "shell_skipped": 0,
+      "shell_failed_tests": [],
+      "test_comparison_available": true,
+      "compared_with_run_id": "10"
+    },
+    {
+      "run_id": "12",
+      "run_url": "https://github.com/krzysR-cmd/test-stats-gh-pages-action/actions/runs/44609716425",
+      "timestamp": "2026-11-19T20:32:53Z",
+      "total": 0,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "flaky_count": 0,
+      "passed_after_retry_count": 0,
+      "retry_count": 0,
+      "duration_ms": 0,
+      "slowest_tests": [
+        {
+          "title": "pytest > test_other_trend_selections_show_at_most_five_results",
+          "duration_ms": 2251
+        },
+        {
+          "title": "pytest > test_paginates_selected_run_tests_and_allows_page_size_selection",
+          "duration_ms": 359
+        },
+        {
+          "title": "pytest > test_dashboard_shows_average_failures_and_flaky_tests_per_run",
+          "duration_ms": 116
+        },
+        {
+          "title": "pytest > test_lists_all_tests_and_marks_new_or_changed_statuses",
+          "duration_ms": 76
+        },
+        {
+          "title": "pytest > test_preserves_rolling_failure_flaky_runtime_and_shell_statistics",
+          "duration_ms": 39
+        },
+        {
+          "title": "pytest > test_expands_junit_glob_and_uses_report_name_in_dashboard_title",
+          "duration_ms": 37
+        },
+        {
+          "title": "pytest > test_reads_nunit_and_xunit_xml_as_supplemental_results",
+          "duration_ms": 37
+        },
+        {
+          "title": "pytest > test_reads_vstest_trx_as_supplemental_test_results",
+          "duration_ms": 37
+        },
+        {
+          "title": "pytest > test_records_shell_failure_when_playwright_results_are_unavailable",
+          "duration_ms": 37
+        },
+        {
+          "title": "pytest > test_run_picker_pages_through_runs_in_batches_of_20",
+          "duration_ms": 37
+        }
+      ],
+      "failed_tests": [],
+      "flaky_tests": [],
+      "tests": [
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_dashboard_shows_average_failures_and_flaky_tests_per_run",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 116,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_expands_junit_glob_and_uses_report_name_in_dashboard_title",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 37,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_fails_when_configured_junit_glob_matches_no_files",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 36,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_lists_all_tests_and_marks_new_or_changed_statuses",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 76,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_longest_tests_trend_includes_timed_junit_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 36,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_longest_tests_trend_shows_only_five_slowest_tests",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 36,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_other_trend_selections_show_at_most_five_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 2251,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_paginates_selected_run_tests_and_allows_page_size_selection",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 359,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_preserves_rolling_failure_flaky_runtime_and_shell_statistics",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 39,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_reads_nunit_and_xunit_xml_as_supplemental_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 37,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_reads_vstest_trx_as_supplemental_test_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 37,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_records_shell_failure_when_playwright_results_are_unavailable",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 37,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_run_picker_pages_through_runs_in_batches_of_20",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 37,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_shows_aggregate_counts_for_historical_runs_without_test_details",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 36,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_uses_repository_name_for_dashboard_title_by_default",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 36,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_action_aggregates_junit_and_playwright_json",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 2,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_action_rejects_unsupported_runs_schema_version",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed",
+          "change": "new"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_action_updates_history_and_writes_github_outputs",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_auto_detects_nunit_2_nunit_3_and_xunit_xml",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_auto_detects_vstest_trx_even_when_file_uses_xml_extension",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 0,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_dashboard_url_is_discovered_from_github_pages_config",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_dashboard_url_must_be_an_absolute_http_url",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_junit_counts_success_failure_and_skip",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 0,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_junit_rejects_non_junit_xml",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 0,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_missing_github_pages_config_omits_dashboard_link",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_missing_result_fails_explicitly",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 0,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_playwright_flaky_is_passed_and_counted_separately",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 0,
+          "status": "passed"
+        }
+      ],
+      "shell_passed": 27,
+      "shell_failed": 0,
+      "shell_skipped": 0,
+      "shell_failed_tests": [],
+      "test_comparison_available": true,
+      "compared_with_run_id": "11"
+    },
+    {
+      "run_id": "13",
+      "run_url": "https://github.com/krzysR-cmd/test-stats-gh-pages-action/actions/runs/44610835994",
+      "timestamp": "2026-11-19T20:39:21Z",
+      "total": 0,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "flaky_count": 0,
+      "passed_after_retry_count": 0,
+      "retry_count": 0,
+      "duration_ms": 0,
+      "slowest_tests": [
+        {
+          "title": "pytest > test_dashboard_shows_average_failures_and_flaky_tests_per_run",
+          "duration_ms": 202
+        },
+        {
+          "title": "pytest > test_other_trend_selections_show_at_most_five_results",
+          "duration_ms": 196
+        },
+        {
+          "title": "pytest > test_lists_all_tests_and_marks_new_or_changed_statuses",
+          "duration_ms": 147
+        },
+        {
+          "title": "pytest > test_paginates_selected_run_tests_and_allows_page_size_selection",
+          "duration_ms": 102
+        },
+        {
+          "title": "pytest > test_expands_junit_glob_and_uses_report_name_in_dashboard_title",
+          "duration_ms": 47
+        },
+        {
+          "title": "pytest > test_preserves_rolling_failure_flaky_runtime_and_shell_statistics",
+          "duration_ms": 47
+        },
+        {
+          "title": "pytest > test_run_picker_pages_through_runs_in_batches_of_20",
+          "duration_ms": 47
+        },
+        {
+          "title": "pytest > test_test_rows_open_detail_with_execution_history",
+          "duration_ms": 47
+        },
+        {
+          "title": "pytest > test_longest_tests_trend_includes_timed_junit_results",
+          "duration_ms": 46
+        },
+        {
+          "title": "pytest > test_reads_nunit_and_xunit_xml_as_supplemental_results",
+          "duration_ms": 46
+        }
+      ],
+      "failed_tests": [],
+      "flaky_tests": [],
+      "tests": [
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_dashboard_shows_average_failures_and_flaky_tests_per_run",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 202,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_expands_junit_glob_and_uses_report_name_in_dashboard_title",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 47,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_fails_when_configured_junit_glob_matches_no_files",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 44,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_lists_all_tests_and_marks_new_or_changed_statuses",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 147,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_longest_tests_trend_includes_timed_junit_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 46,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_longest_tests_trend_shows_only_five_slowest_tests",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 45,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_other_trend_selections_show_at_most_five_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 196,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_paginates_selected_run_tests_and_allows_page_size_selection",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 102,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_preserves_rolling_failure_flaky_runtime_and_shell_statistics",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 47,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_reads_nunit_and_xunit_xml_as_supplemental_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 46,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_reads_vstest_trx_as_supplemental_test_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 45,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_records_shell_failure_when_playwright_results_are_unavailable",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 46,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_run_picker_pages_through_runs_in_batches_of_20",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 47,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_shows_aggregate_counts_for_historical_runs_without_test_details",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 46,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_test_rows_open_detail_with_execution_history",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 47,
+          "status": "passed",
+          "change": "new"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_uses_repository_name_for_dashboard_title_by_default",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 45,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_action_aggregates_junit_and_playwright_json",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 2,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_action_rejects_unsupported_runs_schema_version",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_action_updates_history_and_writes_github_outputs",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 2,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_auto_detects_nunit_2_nunit_3_and_xunit_xml",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_auto_detects_vstest_trx_even_when_file_uses_xml_extension",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_dashboard_url_is_discovered_from_github_pages_config",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_dashboard_url_must_be_an_absolute_http_url",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_junit_counts_success_failure_and_skip",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 0,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_junit_rejects_non_junit_xml",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 0,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_missing_github_pages_config_omits_dashboard_link",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_missing_result_fails_explicitly",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 0,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_playwright_flaky_is_passed_and_counted_separately",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 0,
+          "status": "passed"
+        }
+      ],
+      "shell_passed": 28,
+      "shell_failed": 0,
+      "shell_skipped": 0,
+      "shell_failed_tests": [],
+      "test_comparison_available": true,
+      "compared_with_run_id": "12"
+    },
+    {
+      "run_id": "14",
+      "run_url": "https://github.com/krzysR-cmd/test-stats-gh-pages-action/actions/runs/44613108275",
+      "timestamp": "2026-11-19T20:53:00Z",
+      "total": 0,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "flaky_count": 0,
+      "passed_after_retry_count": 0,
+      "retry_count": 0,
+      "duration_ms": 0,
+      "slowest_tests": [
+        {
+          "title": "pytest > test_other_trend_selections_show_at_most_five_results",
+          "duration_ms": 251
+        },
+        {
+          "title": "pytest > test_dashboard_shows_average_failures_and_flaky_tests_per_run",
+          "duration_ms": 164
+        },
+        {
+          "title": "pytest > test_paginates_selected_run_tests_and_allows_page_size_selection",
+          "duration_ms": 114
+        },
+        {
+          "title": "pytest > test_lists_all_tests_and_marks_new_or_changed_statuses",
+          "duration_ms": 111
+        },
+        {
+          "title": "pytest > test_shows_aggregate_counts_for_historical_runs_without_test_details",
+          "duration_ms": 62
+        },
+        {
+          "title": "pytest > test_test_rows_open_detail_with_execution_history",
+          "duration_ms": 58
+        },
+        {
+          "title": "pytest > test_expands_junit_glob_and_uses_report_name_in_dashboard_title",
+          "duration_ms": 56
+        },
+        {
+          "title": "pytest > test_longest_tests_trend_includes_timed_junit_results",
+          "duration_ms": 52
+        },
+        {
+          "title": "pytest > test_uses_repository_name_for_dashboard_title_by_default",
+          "duration_ms": 50
+        },
+        {
+          "title": "pytest > test_fails_when_configured_junit_glob_matches_no_files",
+          "duration_ms": 47
+        }
+      ],
+      "failed_tests": [],
+      "flaky_tests": [],
+      "tests": [
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_dashboard_shows_average_failures_and_flaky_tests_per_run",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 164,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_expands_junit_glob_and_uses_report_name_in_dashboard_title",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 56,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_fails_when_configured_junit_glob_matches_no_files",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 47,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_lists_all_tests_and_marks_new_or_changed_statuses",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 111,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_longest_tests_trend_includes_timed_junit_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 52,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_longest_tests_trend_shows_only_five_slowest_tests",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 43,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_other_trend_selections_show_at_most_five_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 251,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_paginates_selected_run_tests_and_allows_page_size_selection",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 114,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_preserves_rolling_failure_flaky_runtime_and_shell_statistics",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 47,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_reads_nunit_and_xunit_xml_as_supplemental_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 45,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_reads_vstest_trx_as_supplemental_test_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 43,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_records_shell_failure_when_playwright_results_are_unavailable",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 46,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_run_picker_pages_through_runs_in_batches_of_20",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 45,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_shows_aggregate_counts_for_historical_runs_without_test_details",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 62,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_test_rows_open_detail_with_execution_history",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 58,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_uses_repository_name_for_dashboard_title_by_default",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 50,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_action_aggregates_junit_and_playwright_json",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 3,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_action_rejects_unsupported_runs_schema_version",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_action_updates_history_and_writes_github_outputs",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 3,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_auto_detects_nunit_2_nunit_3_and_xunit_xml",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_auto_detects_vstest_trx_even_when_file_uses_xml_extension",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_dashboard_url_is_discovered_from_github_pages_config",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 2,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_dashboard_url_must_be_an_absolute_http_url",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_junit_counts_success_failure_and_skip",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 0,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_junit_rejects_non_junit_xml",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 0,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_missing_github_pages_config_omits_dashboard_link",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_missing_result_fails_explicitly",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 0,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_playwright_flaky_is_passed_and_counted_separately",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 0,
+          "status": "passed"
+        }
+      ],
+      "shell_passed": 28,
+      "shell_failed": 0,
+      "shell_skipped": 0,
+      "shell_failed_tests": [],
+      "test_comparison_available": true,
+      "compared_with_run_id": "13"
+    },
+    {
+      "run_id": "15",
+      "run_url": "https://github.com/krzysR-cmd/test-stats-gh-pages-action/actions/runs/44613908429",
+      "timestamp": "2026-11-19T20:57:49Z",
+      "total": 0,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "flaky_count": 0,
+      "passed_after_retry_count": 0,
+      "retry_count": 0,
+      "duration_ms": 0,
+      "slowest_tests": [
+        {
+          "title": "pytest > test_other_trend_selections_show_at_most_five_results",
+          "duration_ms": 246
+        },
+        {
+          "title": "pytest > test_dashboard_shows_average_failures_and_flaky_tests_per_run",
+          "duration_ms": 151
+        },
+        {
+          "title": "pytest > test_paginates_selected_run_tests_and_allows_page_size_selection",
+          "duration_ms": 126
+        },
+        {
+          "title": "pytest > test_lists_all_tests_and_marks_new_or_changed_statuses",
+          "duration_ms": 111
+        },
+        {
+          "title": "pytest > test_test_rows_open_detail_with_execution_history",
+          "duration_ms": 57
+        },
+        {
+          "title": "pytest > test_expands_junit_glob_and_uses_report_name_in_dashboard_title",
+          "duration_ms": 56
+        },
+        {
+          "title": "pytest > test_shows_aggregate_counts_for_historical_runs_without_test_details",
+          "duration_ms": 56
+        },
+        {
+          "title": "pytest > test_longest_tests_trend_includes_timed_junit_results",
+          "duration_ms": 55
+        },
+        {
+          "title": "pytest > test_longest_tests_trend_shows_only_five_slowest_tests",
+          "duration_ms": 55
+        },
+        {
+          "title": "pytest > test_preserves_rolling_failure_flaky_runtime_and_shell_statistics",
+          "duration_ms": 55
+        }
+      ],
+      "failed_tests": [],
+      "flaky_tests": [],
+      "tests": [
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_dashboard_shows_average_failures_and_flaky_tests_per_run",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 151,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_expands_junit_glob_and_uses_report_name_in_dashboard_title",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 56,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_fails_when_configured_junit_glob_matches_no_files",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 54,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_lists_all_tests_and_marks_new_or_changed_statuses",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 111,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_longest_tests_trend_includes_timed_junit_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 55,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_longest_tests_trend_shows_only_five_slowest_tests",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 55,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_other_trend_selections_show_at_most_five_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 246,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_paginates_selected_run_tests_and_allows_page_size_selection",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 126,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_preserves_rolling_failure_flaky_runtime_and_shell_statistics",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 55,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_reads_nunit_and_xunit_xml_as_supplemental_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 55,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_reads_vstest_trx_as_supplemental_test_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 54,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_records_shell_failure_when_playwright_results_are_unavailable",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 54,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_run_picker_pages_through_runs_in_batches_of_20",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 55,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_shows_aggregate_counts_for_historical_runs_without_test_details",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 56,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_test_rows_open_detail_with_execution_history",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 57,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_uses_repository_name_for_dashboard_title_by_default",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 54,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_action_aggregates_junit_and_playwright_json",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 3,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_action_rejects_unsupported_runs_schema_version",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 2,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_action_updates_history_and_writes_github_outputs",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 2,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_auto_detects_nunit_2_nunit_3_and_xunit_xml",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_auto_detects_vstest_trx_even_when_file_uses_xml_extension",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_dashboard_url_is_discovered_from_github_pages_config",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 2,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_dashboard_url_must_be_an_absolute_http_url",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_junit_counts_success_failure_and_skip",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_junit_rejects_non_junit_xml",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_missing_github_pages_config_omits_dashboard_link",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_missing_result_fails_explicitly",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_playwright_flaky_is_passed_and_counted_separately",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        }
+      ],
+      "shell_passed": 28,
+      "shell_failed": 0,
+      "shell_skipped": 0,
+      "shell_failed_tests": [],
+      "test_comparison_available": true,
+      "compared_with_run_id": "14"
+    },
+    {
+      "run_id": "16",
+      "run_url": "https://github.com/krzysR-cmd/test-stats-gh-pages-action/actions/runs/44684918130",
+      "timestamp": "2026-11-20T06:02:04Z",
+      "total": 0,
+      "passed": 0,
+      "failed": 0,
+      "skipped": 0,
+      "flaky_count": 0,
+      "passed_after_retry_count": 0,
+      "retry_count": 0,
+      "duration_ms": 0,
+      "slowest_tests": [
+        {
+          "title": "pytest > test_paginates_selected_run_tests_and_allows_page_size_selection",
+          "duration_ms": 1339
+        },
+        {
+          "title": "pytest > test_dashboard_shows_average_failures_and_flaky_tests_per_run",
+          "duration_ms": 571
+        },
+        {
+          "title": "pytest > test_other_trend_selections_show_at_most_five_results",
+          "duration_ms": 355
+        },
+        {
+          "title": "pytest > test_lists_all_tests_and_marks_new_or_changed_statuses",
+          "duration_ms": 282
+        },
+        {
+          "title": "pytest > test_preserves_rolling_failure_flaky_runtime_and_shell_statistics",
+          "duration_ms": 47
+        },
+        {
+          "title": "pytest > test_reads_nunit_and_xunit_xml_as_supplemental_results",
+          "duration_ms": 47
+        },
+        {
+          "title": "pytest > test_test_rows_open_detail_with_execution_history",
+          "duration_ms": 47
+        },
+        {
+          "title": "pytest > test_expands_junit_glob_and_uses_report_name_in_dashboard_title",
+          "duration_ms": 46
+        },
+        {
+          "title": "pytest > test_reads_vstest_trx_as_supplemental_test_results",
+          "duration_ms": 46
+        },
+        {
+          "title": "pytest > test_records_shell_failure_when_playwright_results_are_unavailable",
+          "duration_ms": 46
+        }
+      ],
+      "failed_tests": [],
+      "flaky_tests": [],
+      "tests": [
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_dashboard_shows_average_failures_and_flaky_tests_per_run",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 571,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_expands_junit_glob_and_uses_report_name_in_dashboard_title",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 46,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_fails_when_configured_junit_glob_matches_no_files",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 44,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_lists_all_tests_and_marks_new_or_changed_statuses",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 282,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_longest_tests_trend_includes_timed_junit_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 45,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_longest_tests_trend_shows_only_five_slowest_tests",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 45,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_other_trend_selections_show_at_most_five_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 355,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_paginates_selected_run_tests_and_allows_page_size_selection",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 1339,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_preserves_rolling_failure_flaky_runtime_and_shell_statistics",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 47,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_reads_nunit_and_xunit_xml_as_supplemental_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 47,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_reads_vstest_trx_as_supplemental_test_results",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 46,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_records_shell_failure_when_playwright_results_are_unavailable",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 46,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_run_picker_pages_through_runs_in_batches_of_20",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 46,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_shows_aggregate_counts_for_historical_runs_without_test_details",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 46,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_test_rows_open_detail_with_execution_history",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 47,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_uses_repository_name_for_dashboard_title_by_default",
+          "file": "test.test_detailed_stats.DetailedStatsTests",
+          "duration_ms": 44,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_action_aggregates_junit_and_playwright_json",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 2,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_action_rejects_unsupported_runs_schema_version",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_action_updates_history_and_writes_github_outputs",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 12,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_auto_detects_nunit_2_nunit_3_and_xunit_xml",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_auto_detects_vstest_trx_even_when_file_uses_xml_extension",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 0,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_dashboard_url_is_discovered_from_github_pages_config",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_dashboard_url_must_be_an_absolute_http_url",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_junit_counts_success_failure_and_skip",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 0,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_junit_rejects_non_junit_xml",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 0,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_missing_github_pages_config_omits_dashboard_link",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 1,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_missing_result_fails_explicitly",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 0,
+          "status": "passed"
+        },
+        {
+          "source": "JUnit",
+          "source_file": "results.xml",
+          "title": "pytest > test_playwright_flaky_is_passed_and_counted_separately",
+          "file": "test.test_main.StatsActionTests",
+          "duration_ms": 0,
+          "status": "passed"
+        }
+      ],
+      "shell_passed": 28,
+      "shell_failed": 0,
+      "shell_skipped": 0,
+      "shell_failed_tests": [],
+      "test_comparison_available": true,
+      "compared_with_run_id": "15"
+    }
+  ],
+  "schemaVersion": 1
+}
