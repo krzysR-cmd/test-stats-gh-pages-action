@@ -121,12 +121,14 @@ jobs:
     permissions:
       contents: write
     steps:
+      # Checkout must come first: it cleans the workspace and would
+      # delete the downloaded site/ directory if it ran afterwards.
+      - uses: actions/checkout@v7
+
       - uses: actions/download-artifact@v8
         with:
           name: pages-site
           path: site
-
-      - uses: actions/checkout@v7
 
       - uses: actions/download-artifact@v8
         with:
