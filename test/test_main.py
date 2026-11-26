@@ -134,6 +134,7 @@ class StatsActionTests(unittest.TestCase):
                 "GITHUB_TOKEN": "token",
                 "GITHUB_REPOSITORY": "owner/repo",
                 "GITHUB_API_URL": "https://api.github.test",
+                "INPUT_STATS_SUBDIRECTORY": "reusable-stats",
             }, clear=True), patch.object(main.urllib.request, "urlopen") as urlopen:
                 urlopen.return_value.__enter__.return_value.read.return_value = json.dumps({
                     "html_url": "https://owner.github.io/repo/",
@@ -141,7 +142,7 @@ class StatsActionTests(unittest.TestCase):
                 main.write_summary("CI tests", {"passed": 1, "failed": 0, "skipped": 0, "total": 1})
 
             self.assertIn(
-                "[View test statistics dashboard](https://owner.github.io/repo/stats/)",
+                "[View test statistics dashboard](https://owner.github.io/repo/reusable-stats/)",
                 summary.read_text(),
             )
             request = urlopen.call_args.args[0]

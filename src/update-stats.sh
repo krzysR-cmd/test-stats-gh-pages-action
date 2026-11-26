@@ -3,8 +3,8 @@
 set -euo pipefail
 
 # Reads Playwright-format JSON and optional JUnit, NUnit, xUnit, or VSTest XML results,
-# updates site/stats/runs.json with a rolling 30-day window, and regenerates
-# site/stats/index.html with a failure/flakiness dashboard.
+# updates <site-directory>/<stats-subdirectory>/runs.json with a rolling 30-day
+# window, and regenerates the corresponding index.html dashboard.
 #
 # Required env vars:
 #   GITHUB_RUN_NUMBER   - GitHub Actions run number
@@ -13,16 +13,17 @@ set -euo pipefail
 #   GITHUB_REPOSITORY   - e.g. "org/repo"
 # Optional env vars:
 #   SHELL_TESTS_XML     - optional path to JUnit, NUnit, xUnit, or VSTest XML results
+#   STATS_SUBDIRECTORY - relative dashboard directory (default: stats)
 
 RESULTS_DIR="${RESULTS_DIR:-downloaded-results}"
 SITE_DIR="${SITE_DIR:-site}"
-
-mkdir -p "${SITE_DIR}/stats"
+STATS_SUBDIRECTORY="${STATS_SUBDIRECTORY:-stats}"
 
 python3 - <<PYEOF
 import json, os, glob, sys, re
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, timedelta
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 def strip_ansi(s):
@@ -30,6 +31,7 @@ def strip_ansi(s):
 
 results_dir     = os.environ.get("RESULTS_DIR", "downloaded-results")
 site_dir        = os.environ.get("SITE_DIR", "site")
+stats_subdirectory = Path(os.environ.get("STATS_SUBDIRECTORY", "stats"))
 shell_tests_xml = os.environ.get("SHELL_TESTS_XML", "")
 report_name     = os.environ.get("REPORT_NAME", "").strip()
 repository_name = os.environ.get("GITHUB_REPOSITORY", "").rsplit("/", 1)[-1].strip()
@@ -438,9 +440,20 @@ if flaky_tests:
     for t in flaky_tests:
         print(f"    ~ {t['title']}")
 
-stats_dir = os.path.join(site_dir, "stats")
-os.makedirs(stats_dir, exist_ok=True)
-runs_file = os.path.join(stats_dir, "runs.json")
+site_path = Path(site_dir).resolve()
+if (
+    stats_subdirectory.is_absolute()
+    or not stats_subdirectory.parts
+    or any(part in ("", ".", "..") for part in stats_subdirectory.parts)
+):
+    print("[stats] STATS_SUBDIRECTORY must be a safe relative path", file=sys.stderr)
+    raise SystemExit(1)
+stats_dir = (site_path / stats_subdirectory).resolve()
+if site_path != stats_dir and site_path not in stats_dir.parents:
+    print("[stats] STATS_SUBDIRECTORY resolves outside SITE_DIR", file=sys.stderr)
+    raise SystemExit(1)
+stats_dir.mkdir(parents=True, exist_ok=True)
+runs_file = str(stats_dir / "runs.json")
 
 if os.path.exists(runs_file):
     with open(runs_file) as f:
@@ -701,7 +714,7 @@ now_utc = datetime.now(timezone.utc)
 now_de  = now_utc.astimezone(ZoneInfo("Europe/Berlin"))
 updated_label = f"{now_de.strftime('%Y-%m-%d %H:%M %Z')} ({now_utc.strftime('%H:%M UTC')})"
 
-dashboard = os.path.join(site_dir, "stats", "index.html")
+dashboard = str(stats_dir / "index.html")
 with open(dashboard, "w") as fh:
     fh.write(f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">

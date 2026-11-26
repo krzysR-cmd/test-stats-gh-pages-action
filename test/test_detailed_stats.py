@@ -13,6 +13,32 @@ SCRIPT = Path(__file__).parents[1] / "src" / "update-stats.sh"
 
 
 class DetailedStatsTests(unittest.TestCase):
+    def test_custom_stats_subdirectory(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            results = root / "results"
+            results.mkdir()
+            (root / "shell.xml").write_text(
+                '<testsuite name="suite"><testcase classname="suite" name="works"/></testsuite>'
+            )
+            env = os.environ.copy()
+            env.update({
+                "RESULTS_DIR": str(results),
+                "SITE_DIR": str(root / "site"),
+                "STATS_SUBDIRECTORY": "reusable-stats",
+                "SHELL_TESTS_XML": str(root / "shell.xml"),
+                "GITHUB_RUN_NUMBER": "22",
+                "GITHUB_RUN_ID": "run-22",
+                "GITHUB_SERVER_URL": "https://github.com",
+                "GITHUB_REPOSITORY": "owner/repo",
+            })
+            subprocess.run(["bash", str(SCRIPT)], check=True, env=env, capture_output=True, text=True)
+
+            stats = root / "site" / "reusable-stats"
+            self.assertTrue((stats / "runs.json").is_file())
+            self.assertTrue((stats / "index.html").is_file())
+            self.assertFalse((root / "site" / "stats").exists())
+
     def test_test_rows_open_detail_with_execution_history(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

@@ -31,12 +31,13 @@ other site content and perform one deployment.
     history-days: 30
     report-name: CI tests
     # Optional override; auto-detected from GitHub Pages configuration if omitted.
-    # dashboard-url: https://owner.github.io/repo/stats/
+    # dashboard-url: https://owner.github.io/repo/reusable-stats/
     detailed-statistics: "true"
 ```
 
 By default, the action looks up the repository's configured GitHub Pages URL
-and links to its `stats/` dashboard in the GitHub Actions summary. The workflow
+and appends `stats-subdirectory` (default: `reusable-stats`) to it in the
+GitHub Actions summary. The workflow
 token needs `pages: read` permission for this lookup. If Pages is not configured
 yet, the summary includes counts without a dashboard link. You can set
 `dashboard-url` explicitly to override the discovered URL.
@@ -49,7 +50,7 @@ JUnit XML, VSTest TRX, NUnit 2/3 XML, xUnit.net XML reports with an
 extension and distinguishes XML formats by their root element, even when a TRX
 file has an `.xml` extension. To add another native format, implement a parser
 adapter that emits the existing normalized counts and preserve
-`stats/runs.json` as the storage contract.
+`<stats-subdirectory>/runs.json` as the storage contract.
 
 For example, VSTest can write a TRX report using the supplied logger command
 (the `.xml` filename is okay; the action detects the TRX contents):
@@ -97,8 +98,8 @@ It creates/updates:
 - `$GITHUB_STEP_SUMMARY` with test counts and a link to the published dashboard
   when its Pages URL is available; plus action outputs `total`, `passed`,
   `failed`, `skipped`, and `stats-file`.
-- `stats/runs.json` and `stats/index.html` — the detailed rolling 30-day
-  per-test dashboard, including average failures and flaky tests per run across
+- `<stats-subdirectory>/runs.json` and `<stats-subdirectory>/index.html` — the
+  detailed rolling 30-day per-test dashboard, including average failures and flaky tests per run across
   eligible runs. It lists all tests captured by
   the selected run (the newest run by default), with a selector at the top of
   the dashboard. The **Branch** selector defaults to **All branches** and

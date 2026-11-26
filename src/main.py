@@ -337,7 +337,7 @@ def parse_result(path, forced_format):
     fail(f"cannot infer result format for {path}; set format to junit, trx, nunit, xunit, or playwright-json")
 
 
-def configured_dashboard_url():
+def configured_dashboard_url(stats_subdirectory="stats"):
     token = env("GITHUB_TOKEN").strip()
     repository = env("GITHUB_REPOSITORY").strip()
     if not token or not repository:
@@ -380,7 +380,8 @@ def configured_dashboard_url():
         fail("GitHub Pages API returned an invalid html_url")
     if parsed_url.scheme not in ("http", "https") or not parsed_url.netloc:
         fail("GitHub Pages API returned an invalid html_url")
-    return f"{pages_url.rstrip('/')}/stats/"
+    subdirectory = stats_subdirectory.strip().strip("/")
+    return f"{pages_url.rstrip('/')}/{quote(subdirectory, safe='/')}/"
 
 
 def write_summary(name, run):
@@ -389,7 +390,8 @@ def write_summary(name, run):
         return
     dashboard_url = env("INPUT_DASHBOARD_URL").strip()
     if not dashboard_url:
-        dashboard_url = configured_dashboard_url()
+        stats_subdirectory = env("INPUT_STATS_SUBDIRECTORY", "stats").strip()
+        dashboard_url = configured_dashboard_url(stats_subdirectory)
     link = ""
     if dashboard_url:
         try:

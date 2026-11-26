@@ -9,7 +9,7 @@ inputs:
     required: false
     default: auto
   site-directory:
-    description: Existing site directory to update, including stats/runs.json and stats/index.html.
+    description: Existing site directory to update with the configured dashboard subdirectory.
     required: false
     default: site
   history-days:
@@ -78,6 +78,7 @@ runs:
       env:
         RESULTS_DIR: ${{ inputs.playwright-results-directory }}
         SITE_DIR: ${{ inputs.site-directory }}
+        STATS_SUBDIRECTORY: ${{ inputs.stats-subdirectory }}
         REPORT_NAME: ${{ inputs.report-name }}
         SHELL_TESTS_XML: ${{ inputs.shell-test-results }}
         GITHUB_RUN_NUMBER: ${{ github.run_number }}
